@@ -1,0 +1,164 @@
+Aqui está a documentação técnica completa, blindada e detalhada para o desenvolvimento do sistema da escolinha de futebol. Este documento serve como o seu "Norte" durante os 15 dias de desenvolvimento: sempre que tiver dúvidas sobre banco, regras de negócio ou o que vai em cada tela, consulte este guia.
+
+🏗️ 1. Arquitetura & Stack Tecnológica
+Back-end: Laravel 11+ (PHP 8.2+)
+
+Front-end: React (com Vite + Tailwind CSS para acelerar a estilização)
+
+Comunicação (Ponte): Inertia.js (elimina a necessidade de criar APIs REST separadas, permitindo usar rotas e controladores do Laravel direto no React).
+
+Autenticação & Sessão: Laravel Sanctum (autenticação baseada em cookies integrada nativamente com Inertia).
+
+Banco de Dados: MariaDB.
+
+🗄️ 2. Modelagem do Banco de Dados (Estrutura Completa)
+Aqui estão os campos exatos que você precisa colocar nas suas Migrations do Laravel:
+
+Plaintext
+[users] (Administradores e Professores)
+  - id (bigint, PK)
+  - name (varchar)
+  - email (varchar, unique)
+  - password (varchar)
+  - role (enum: 'admin', 'professor')
+  - timestamps
+
+[responsaveis] (Para acesso dos Pais ao Portal)
+  - id (bigint, PK)
+  - name (varchar)
+  - email (varchar, unique)
+  - password (varchar)
+  - phone (varchar)
+  - cpf (varchar, unique)
+  - timestamps
+
+[alunos]
+  - id (bigint, PK)
+  - responsavel_id (bigint, FK -> responsaveis.id)
+  - name (varchar)
+  - birth_date (date)
+  - status (enum: 'active', 'inactive', 'suspended')
+  - medical_notes (text, nullable)
+  - photo_path (varchar, nullable)
+  - timestamps
+
+[turmas]
+  - id (bigint, PK)
+  - professor_id (bigint, FK -> users.id)
+  - name (varchar) -> Ex: "Sub-11 Terça/Quinta"
+  - schedule (varchar) -> Ex: "14:00 - 15:30"
+  - timestamps
+
+[matriculas] (Tabela pivô - Relacionamento Muitos-para-Muitos)
+  - aluno_id (bigint, FK -> alunos.id)
+  - turma_id (bigint, FK -> turmas.id)
+  - primary key (aluno_id, turma_id)
+
+[frequencias]
+  - id (bigint, PK)
+  - aluno_id (bigint, FK -> alunos.id)
+  - turma_id (bigint, FK -> turmas.id)
+  - date (date)
+  - status (enum: 'present', 'absent')
+  - timestamps
+
+[mensalidades]
+  - id (bigint, PK)
+  - aluno_id (bigint, FK -> alunos.id)
+  - amount (decimal 10,2)
+  - due_date (date)
+  - paid_at (timestamp, nullable)
+  - status (enum: 'pending', 'paid', 'overdue')
+  - pix_code (text, nullable) -> Onde o admin cola a linha do "copia e cola"
+  - timestamps
+
+[produtos] (Loja de Uniformes)
+  - id (bigint, PK)
+  - name (varchar)
+  - price (decimal 10,2)
+  - stock_quantity (int)
+  - timestamps
+
+[vendas_produtos]
+  - id (bigint, PK)
+  - produto_id (bigint, FK -> produtos.id)
+  - quantity (int)
+  - total_amount (decimal 10,2)
+  - date (date)
+  - timestamps
+
+[fluxo_caixa]
+  - id (bigint, PK)
+  - type (enum: 'income', 'expense')
+  - origin_type (enum: 'mensalidade', 'venda_produto', 'avulso')
+  - origin_id (bigint, nullable) -> ID da mensalidade ou da venda (para rastro)
+  - description (varchar)
+  - amount (decimal 10,2)
+  - date (date)
+  - timestamps
+🛠️ 3. Especificação Detalhada de Telas & Regras de Negócio
+🖥️ Painel Administrativo & Professor (Dashboard Principal)
+1. Dashboard Geral
+Dados em Tela (Cards de Métricas):
+
+Total de alunos ativos (count em alunos onde status = 'active').
+
+Inadimplência do mês (count em mensalidades onde status = 'overdue' ou pending com data de vencimento menor que hoje).
+
+Aniversariantes do mês/dia.
+
+Gráfico: Receitas vs. Despesas do mês atual (puxado da tabela fluxo_caixa).
+
+2. Cadastro e Gestão de Alunos (CRUD)
+Campos de Formulário: Nome completo, Foto (upload de arquivo), Data de Nascimento, Observações Médicas (Alergias/Restrições), Vínculo com o Responsável (Select buscando da tabela responsaveis).
+
+Regra de Negócio: Ao matricular o aluno, o admin seleciona em quais turmas ele vai jogar. Isso insere registros na tabela pivô matriculas.
+
+3. Gestão de Professores & Turmas
+Interface: Cadastro de professores (que são usuários com role = 'professor'). Cadastro de Turmas vinculando um professor responsável e os dias/horários das aulas.
+
+4. Gestão de Mensalidades (Painel Financeiro)
+Funcionalidade Principal: Tela de listagem com filtros rápidos por status (Paga, Pendente, Vencida).
+
+Ação "Dar Baixa Manual": Botão que altera o status da mensalidade para paid, preenche o paid_at com o timestamp atual e automaticamente cria um registro de receita na tabela fluxo_caixa (type = 'income', origin_type = 'mensalidade').
+
+Gerador de Mensalidades: Um botão simples para o admin "Gerar Mensalidades do Mês". O sistema cria um registro na tabela mensalidades para cada aluno ativo com o valor padrão e a data de vencimento escolhida.
+
+Campo Pix: Input de texto para o admin poder colar a chave/código Pix daquela mensalidade específica para o pai copiar no portal.
+
+5. Taxas Extras & Venda de Uniformes (Loja)
+Interface: Tela de PDV simplificada. O admin seleciona o produto, a quantidade e clica em "Vender".
+
+Regra de Negócio ao Vender:
+
+Reduz o stock_quantity na tabela produtos.
+
+Registra na tabela vendas_produtos.
+
+Cria o lançamento correspondente na tabela fluxo_caixa (type = 'income', origin_type = 'venda_produto').
+
+6. Lançamento de Fluxo de Caixa (Despesas/Geral)
+Interface: Formulário simples para lançar saídas (ex: Luz, Aluguel de Quadra, Material).
+
+Campos: Tipo (Saída), Descrição, Valor, Data.
+
+7. Diário de Classe (Chamada - Foco no Mobile)
+Interface: O professor seleciona a Turma e a Data atual. O sistema lista todos os alunos matriculados naquela turma com um Switch/Checkbox ao lado do nome (Padrão: Marcado como Presente).
+
+Ação: Ao salvar, dispara um bulk insert (inserção em lote) na tabela frequencias.
+
+8. Ficha de Avaliação Técnica/Física
+Interface: Formulário onde o professor seleciona o Aluno e preenche notas (de 1 a 5 ou 1 a 10) ou pareceres para os critérios: Passe, Chute, Domínio de Bola, Condicionamento Físico e Disciplina/Postura.
+
+📱 Portal dos Pais (Visão do Aluno)
+Os pais entram usando o e-mail e senha cadastrados na tabela responsaveis. Ao logar, o sistema busca os alunos vinculados a esse responsavel_id.
+
+Home do Aluno: Exibe a foto do garoto, status da matrícula e a turma dele.
+
+Aba Desempenho: Mostra os dados inseridos na última Avaliação Técnica/Física feita pelo professor e o gráfico/porcentagem de presença nas aulas (calculado com base nas frequencias).
+
+Aba Financeiro (Crucial): Listagem das mensalidades do filho.
+
+Se estiver pendente, exibe um botão "Pagar via PIX" que abre um Modal exibindo o pix_code para o pai clicar em "Copiar Código".
+
+Exibe um aviso claro de que, após o pagamento, a baixa é manual e o comprovante deve ser enviado ao administrador.

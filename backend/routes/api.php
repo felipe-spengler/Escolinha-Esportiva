@@ -1,85 +1,76 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\Bairro;
-use App\Models\Clube;
-use App\Models\Acao;
-use App\Models\Igreja;
-use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SystemController;
+use App\Http\Controllers\ProfessorController;
+use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\PortalController;
 
-// --- PUBLIC ROUTES ---
-Route::get('/igrejas', fn() => response()->json(Igreja::with('clubes')->where('status', 'ativo')->get()));
-Route::get('/bairros', fn() => response()->json(Bairro::all()));
-Route::get('/clubes', fn() => response()->json(Clube::with('igreja')->get()));
-Route::get('/acoes', fn() => response()->json(Acao::with(['clube.igreja', 'bairro'])->where('status_moderacao', 'aprovada')->get()));
+// --- PUBLIC ROUTE ---
+Route::post('/auth/login', [AuthController::class, 'login']);
 
-// --- COLLABORATION ---
-Route::post('/propor-acao', function (Request $request) {
-    $data = $request->validate([
-        'titulo' => 'required|string|max:255',
-        'descricao' => 'nullable|string',
-        'bairro_id' => 'required|exists:bairros,id',
-        'igreja_id' => 'nullable|exists:igrejas,id',
-        'data_inicio' => 'nullable|date',
-        'lat' => 'nullable|numeric',
-        'lng' => 'nullable|numeric',
-    ]);
+// --- PROTECTED ROUTES ---
+Route::middleware('api.auth')->group(function () {
+    
+    // Auth info & logout
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-    $acao = Acao::create(array_merge($data, [
-        'status' => 'programada',
-        'status_moderacao' => 'pendente'
-    ]));
+    // Dashboard data
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    \App\Services\LogService::log('PROPOSE_ACTION', "Guest proposed action: {$acao->titulo}");
-    return response()->json($acao, 201);
-});
+    // Alunos
+    Route::get('/alunos', [SystemController::class, 'listAlunos']);
+    Route::post('/alunos', [SystemController::class, 'storeAluno']);
+    Route::put('/alunos/{aluno}', [SystemController::class, 'updateAluno']);
+    Route::delete('/alunos/{aluno}', [SystemController::class, 'deleteAluno']);
 
-Route::post('/propor-igreja', function (Request $request) {
-    $data = $request->validate([
-        'nome' => 'required|string|max:255',
-        'endereco' => 'required|string',
-        'lat' => 'nullable|numeric',
-        'lng' => 'nullable|numeric',
-    ]);
+    // Responsáveis
+    Route::get('/responsaveis', [SystemController::class, 'listResponsaveis']);
+    Route::post('/responsaveis', [SystemController::class, 'storeResponsavel']);
+    Route::put('/responsaveis/{responsavel}', [SystemController::class, 'updateResponsavel']);
+    Route::delete('/responsaveis/{responsavel}', [SystemController::class, 'deleteResponsavel']);
 
-    $igreja = Igreja::create(array_merge($data, ['status' => 'pendente']));
-    \App\Services\LogService::log('PROPOSE_CHURCH', "Guest proposed church: {$igreja->nome}");
-    return response()->json($igreja, 201);
-});
+    // Turmas
+    Route::get('/turmas', [SystemController::class, 'listTurmas']);
+    Route::post('/turmas', [SystemController::class, 'storeTurma']);
+    Route::put('/turmas/{turma}', [SystemController::class, 'updateTurma']);
+    Route::delete('/turmas/{turma}', [SystemController::class, 'deleteTurma']);
 
-// --- ADMIN / LOGS ---
-Route::get('/logs', [LogController::class, 'index']);
-Route::post('/logs', [LogController::class, 'store']);
+    // Professores
+    Route::get('/professores', [SystemController::class, 'listProfessores']);
+    Route::post('/professores', [SystemController::class, 'storeProfessor']);
+    Route::put('/professores/{professor}', [SystemController::class, 'updateProfessor']);
+    Route::delete('/professores/{professor}', [SystemController::class, 'deleteProfessor']);
 
-// --- MODERATION ---
-Route::patch('/acoes/{acao}/vincular', function (Request $request, Acao $acao) {
-    $request->validate([
-        'clube_id' => 'required|exists:clubes,id',
-        'status' => 'nullable|in:programada,realizada',
-        'pessoas_atendidas' => 'nullable|integer',
-        'fotos' => 'nullable|array'
-    ]);
+    // Chamada (Attendance)
+    Route::get('/chamada', [ProfessorController::class, 'listChamada']);
+    Route::post('/chamada', [ProfessorController::class, 'saveChamada']);
 
-    $acao->update(array_merge($request->all(), ['status_moderacao' => 'aprovada']));
-    \App\Services\LogService::log('APPROVE_ACTION', "Approved action: {$acao->titulo}");
-    return response()->json($acao);
-});
+    // Avaliações (Assessments)
+    Route::get('/avaliacoes/{aluno}', [ProfessorController::class, 'listAvaliacoes']);
+    Route::post('/avaliacoes', [ProfessorController::class, 'storeAvaliacao']);
 
-Route::patch('/igrejas/{igreja}/aprovar', function (Igreja $igreja) {
-    $igreja->update(['status' => 'ativo']);
-    \App\Services\LogService::log('APPROVE_CHURCH', "Approved church: {$igreja->nome}");
-    return response()->json($igreja);
-});
+    // Mensalidades
+    Route::get('/mensalidades', [FinanceController::class, 'listMensalidades']);
+    Route::post('/mensalidades/gerar', [FinanceController::class, 'gerarMensalidadesMes']);
+    Route::patch('/mensalidades/{mensalidade}/pix', [FinanceController::class, 'updatePix']);
+    Route::post('/mensalidades/{mensalidade}/baixa', [FinanceController::class, 'darBaixaManual']);
 
-Route::get('/admin/resumo', function () {
-    return response()->json([
-        'acoes_pendentes' => Acao::where('status_moderacao', 'pendente')->with(['bairro', 'igreja'])->get(),
-        'igrejas_pendentes' => Igreja::where('status', 'pendente')->get(),
-        'metricas' => [
-            'total_impacto' => Acao::sum('pessoas_atendidas'),
-            'total_igrejas' => Igreja::where('status', 'ativo')->count(),
-            'total_acoes' => Acao::where('status_moderacao', 'aprovada')->count(),
-        ]
-    ]);
+    // Loja (PDV)
+    Route::get('/produtos', [FinanceController::class, 'listProdutos']);
+    Route::post('/produtos', [FinanceController::class, 'storeProduto']);
+    Route::put('/produtos/{produto}', [FinanceController::class, 'updateProduto']);
+    Route::delete('/produtos/{produto}', [FinanceController::class, 'deleteProduto']);
+    Route::post('/produtos/vender', [FinanceController::class, 'venderProduto']);
+
+    // Fluxo de Caixa (Lançamentos Gerais)
+    Route::get('/fluxo-caixa', [FinanceController::class, 'listFluxoCaixa']);
+    Route::post('/fluxo-caixa', [FinanceController::class, 'storeFluxoCaixa']);
+
+    // Portal dos Pais
+    Route::get('/portal/filhos', [PortalController::class, 'listFilhos']);
+    Route::get('/portal/filhos/{aluno}', [PortalController::class, 'getFilhoDetalhes']);
 });

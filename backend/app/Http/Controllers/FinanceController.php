@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Mensalidade;
+use App\Models\Aluno;
+use App\Models\Produto;
+use App\Models\VendaProduto;
+use App\Models\FluxoCaixa;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
+class FinanceController extends Controller
+{
+    // ==========================================
+    // MENSALIDADES
+    // ==========================================
+    public function listMensalidades(Request $request)
+    {
+        $query = Mensalidade::with('aluno.responsavel');
+
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+
+        return response()->json($query->orderBy('due_date', 'desc')->get());
+    }
+
+    public function updatePix(Request $request, Mensalidade $mensalidade)
+    {
+        $request->validate([
+            'pix_code' => 'required|string',
+        ]);
+
+        $mensalidade->update([
+            'pix_code' => $request->pix_code,
+        ]);
+
+        return response()->json($mensalidade);
+    }
+
+    public function darBaixaManual(Mensalidade $mensalidade)
+    {
+        if ($mensalidade->status === 'paid') {
+            return response()->json(['message' => 'Mensalidade já está paga.'], 400);
+        }
+
+        DB::transaction(function () use ($mensalidade) {
+            $mensalidade->update([
+                'status' => 'paid',
+                'paid_at' => Carbon::now(),
+            ]);
+
+            // Registrar no fluxo de caixa
+            FluxoCaixa::create([
+                'type' => 'income',
+                'origin_type' => 'mensalidade',
+                'origin_id' => $mensalidade->id,
+                'description' => 'Mensalidade - Aluno: ' . $mensalidade->aluno->name,
+                'amount' => $mensalidade->amount,
+                'date' => Carbon::today(),
+            ]);
+        });
+
+        return response()->json($mensalidade->load('aluno'));
+    }
+
+    public function gerarMensalidadesMes(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'due_date' => 'required|date',
+        ]);
+
+        $amount = $request->amount;
+        $dueDate = $request->due_date;
+
+        $alunosAtivos = Aluno::where('status', 'active')->get();
+        $criadas = 0;
+
+        foreach ($alunosAtivos as $aluno) {
+            // Evitar duplicidade de mensalidade para o mesmo aluno com mesma data de vencimento
+            $exists = Mensalidade::where('aluno_id', $aluno->id)
+                ->where('due_date', $dueDate)
+                ->exists();
+
+            if (!$exists) {
+                Mensalidade::create([
+                    'aluno_id' => $aluno->id,
+                    'amount' => $amount,
+                    'due_date' => $dueDate,
+                    'status' => 'pending',
+                ]);
+                $criadas++;
+            }
+        }
+
+        return response()->json([
+            'message' => "Mensalidades geradas com sucesso! total: {$criadas}",
+        ]);
+    }
+
+    // ==========================================
+    // LOJA / PDV
+    // ==========================================
+    public function listProdutos()
+    {
+        return response()->json(Produto::all());
+    }
+
+    public function storeProduto(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+        ]);
+
+        $produto = Produto::create($data);
+        return response()->json($produto, 201);
+    }
+
+    public function updateProduto(Request $request, Produto $produto)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+        ]);
+
+        $produto->update($data);
+        return response()->json($produto);
+    }
+
+    public function deleteProduto(Produto $produto)
+    {
+        $produto->delete();
+        return response()->json(['message' => 'Produto deletado com sucesso']);
+    }
+
+    public function venderProduto(Request $request)
+    {
+        $request->validate([
+            'produto_id' => 'required|exists:produtos,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $produto = Produto::findOrFail($request->produto_id);
+
+        if ($produto->stock_quantity < $request->quantity) {
+            return response()->json(['message' => 'Estoque insuficiente'], 400);
+        }
+
+        $totalAmount = $produto->price * $request->quantity;
+
+        DB::transaction(function () use ($produto, $request, $totalAmount) {
+            // 1. Reduzir estoque
+            $produto->decrement('stock_quantity', $request->quantity);
+
+            // 2. Registrar venda
+            $venda = VendaProduto::create([
+                'produto_id' => $produto->id,
+                'quantity' => $request->quantity,
+                'total_amount' => $totalAmount,
+                'date' => Carbon::today(),
+            ]);
+
+            // 3. Registrar fluxo de caixa
+            FluxoCaixa::create([
+                'type' => 'income',
+                'origin_type' => 'venda_produto',
+                'origin_id' => $venda->id,
+                'description' => "Venda Loja - {$produto->name} (x{$request->quantity})",
+                'amount' => $totalAmount,
+                'date' => Carbon::today(),
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Venda realizada com sucesso!',
+            'produto' => $produto->fresh(),
+        ]);
+    }
+
+    // ==========================================
+    // FLUXO DE CAIXA (Lançamentos Gerais/Saídas)
+    // ==========================================
+    public function listFluxoCaixa()
+    {
+        return response()->json(FluxoCaixa::orderBy('date', 'desc')->get());
+    }
+
+    public function storeFluxoCaixa(Request $request)
+    {
+        $data = $request->validate([
+            'type' => 'required|in:income,expense',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'date' => 'required|date',
+        ]);
+
+        $fluxo = FluxoCaixa::create(array_merge($data, [
+            'origin_type' => 'avulso',
+        ]));
+
+        return response()->json($fluxo, 201);
+    }
+}

@@ -3,152 +3,198 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Bairro;
-use App\Models\Clube;
-use App\Models\Acao;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Models\Responsavel;
+use App\Models\Aluno;
+use App\Models\Turma;
+use App\Models\Frequencia;
+use App\Models\Mensalidade;
+use App\Models\Produto;
+use App\Models\VendaProduto;
+use App\Models\FluxoCaixa;
+use App\Models\Avaliacao;
+use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // 0. Criar Usuário Super Admin
-        \App\Models\User::create([
-            'name' => 'SUPER ADMIN',
+        // 1. Admin
+        $admin = User::create([
+            'name' => 'Diretor Felipe',
             'email' => 'admin@projeto.com',
-            'password' => bcrypt('senha123'),
-            'role' => 'super_admin'
+            'password' => Hash::make('senha123'),
+            'role' => 'admin',
         ]);
 
-        // 1. Criar Igrejas
-        $igrejas = [
-            [
-                'nome' => 'Igreja Central de Toledo',
-                'endereco' => 'Rua Guarani, 1000 - Centro, Toledo - PR',
-                'lat' => -24.7199,
-                'lng' => -53.7433,
-            ],
-            [
-                'nome' => 'Igreja Porto Alegre',
-                'endereco' => 'Rua Porto Alegre, 500 - Jd. Porto Alegre, Toledo - PR',
-                'lat' => -24.7000,
-                'lng' => -53.7600,
-            ],
-            [
-                'nome' => 'Igreja Coopagro',
-                'endereco' => 'Av. Maripá, 2000 - Jd. Coopagro, Toledo - PR',
-                'lat' => -24.7100,
-                'lng' => -53.7300,
-            ]
+        // 2. Professores
+        $prof1 = User::create([
+            'name' => 'Professor Carlos',
+            'email' => 'carlos@projeto.com',
+            'password' => Hash::make('senha123'),
+            'role' => 'professor',
+        ]);
+
+        $prof2 = User::create([
+            'name' => 'Professor Marcos',
+            'email' => 'marcos@projeto.com',
+            'password' => Hash::make('senha123'),
+            'role' => 'professor',
+        ]);
+
+        // 3. Responsáveis
+        $resp1 = Responsavel::create([
+            'name' => 'Roberto Silva',
+            'email' => 'pai1@projeto.com',
+            'password' => Hash::make('senha123'),
+            'phone' => '(45) 99887-6655',
+            'cpf' => '111.222.333-44',
+        ]);
+
+        $resp2 = Responsavel::create([
+            'name' => 'Ana Santos',
+            'email' => 'mae2@projeto.com',
+            'password' => Hash::make('senha123'),
+            'phone' => '(45) 99776-5544',
+            'cpf' => '222.333.444-55',
+        ]);
+
+        $resp3 = Responsavel::create([
+            'name' => 'Juliana Souza',
+            'email' => 'mae3@projeto.com',
+            'password' => Hash::make('senha123'),
+            'phone' => '(45) 99665-4433',
+            'cpf' => '333.444.555-66',
+        ]);
+
+        // 4. Alunos
+        $aluno1 = Aluno::create([
+            'responsavel_id' => $resp1->id,
+            'name' => 'Pedro Silva',
+            'birth_date' => '2016-04-12',
+            'status' => 'active',
+            'medical_notes' => 'Nenhuma restrição alimentar. Alérgico a picada de abelha.',
+            'photo_path' => 'https://picsum.photos/seed/pedro/200/200',
+        ]);
+
+        $aluno2 = Aluno::create([
+            'responsavel_id' => $resp2->id,
+            'name' => 'Lucas Santos',
+            'birth_date' => '2015-08-20',
+            'status' => 'active',
+            'medical_notes' => 'Asma leve. Usa bombinha se necessário.',
+            'photo_path' => 'https://picsum.photos/seed/lucas/200/200',
+        ]);
+
+        $aluno3 = Aluno::create([
+            'responsavel_id' => $resp3->id,
+            'name' => 'Gabriel Souza',
+            'birth_date' => '2017-11-05',
+            'status' => 'active',
+            'medical_notes' => 'Nenhuma restrição.',
+            'photo_path' => 'https://picsum.photos/seed/gabriel/200/200',
+        ]);
+
+        $aluno4 = Aluno::create([
+            'responsavel_id' => $resp1->id,
+            'name' => 'Mateus Silva',
+            'birth_date' => '2014-02-18',
+            'status' => 'suspended',
+            'medical_notes' => 'Nenhuma restrição.',
+            'photo_path' => 'https://picsum.photos/seed/mateus/200/200',
+        ]);
+
+        // 5. Turmas
+        $turma1 = Turma::create([
+            'professor_id' => $prof1->id,
+            'name' => 'Sub-11 Terça/Quinta',
+            'schedule' => '14:00 - 15:30',
+        ]);
+
+        $turma2 = Turma::create([
+            'professor_id' => $prof2->id,
+            'name' => 'Sub-13 Segunda/Quarta',
+            'schedule' => '16:00 - 17:30',
+        ]);
+
+        // Matriculas
+        $aluno1->turmas()->attach($turma1->id);
+        $aluno3->turmas()->attach($turma1->id);
+        
+        $aluno2->turmas()->attach($turma2->id);
+        $aluno4->turmas()->attach($turma2->id);
+
+        // 6. Frequencias
+        $datasChamada = [
+            Carbon::today()->subDays(6)->toDateString(),
+            Carbon::today()->subDays(4)->toDateString(),
+            Carbon::today()->subDays(2)->toDateString(),
         ];
 
-        $igrejasNoBanco = [];
-        foreach ($igrejas as $index => $igrejaData) {
-            $igreja = \App\Models\Igreja::create(array_merge($igrejaData, ['status' => 'ativo']));
-            $igrejasNoBanco[] = $igreja;
+        foreach ($datasChamada as $dt) {
+            // Turma 1
+            Frequencia::create(['aluno_id' => $aluno1->id, 'turma_id' => $turma1->id, 'date' => $dt, 'status' => 'present']);
+            Frequencia::create(['aluno_id' => $aluno3->id, 'turma_id' => $turma1->id, 'date' => $dt, 'status' => rand(0, 1) ? 'present' : 'absent']);
 
-            // Criar um admin para cada igreja
-            \App\Models\User::create([
-                'name' => 'Admin ' . $igreja->nome,
-                'email' => 'admin' . ($index + 1) . '@projeto.com',
-                'password' => bcrypt('senha123'),
-                'role' => 'admin_igreja',
-                'igreja_id' => $igreja->id
-            ]);
+            // Turma 2
+            Frequencia::create(['aluno_id' => $aluno2->id, 'turma_id' => $turma2->id, 'date' => $dt, 'status' => 'present']);
+            Frequencia::create(['aluno_id' => $aluno4->id, 'turma_id' => $turma2->id, 'date' => $dt, 'status' => 'absent']);
         }
 
-        // 2. Criar Bairros a partir do GeoJSON oficial (Toledo)
-        $bairrosJsonPath = database_path('seeders/toledo_bairros_oficial.json');
-        if (file_exists($bairrosJsonPath)) {
-            $bairrosJson = file_get_contents($bairrosJsonPath);
-            $bairrosData = json_decode($bairrosJson, true);
-            $bairrosNoBanco = [];
+        // 7. Mensalidades
+        // Pedro
+        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => Carbon::now()->subMonth()->startOfMonth()->addDays(9)->toDateString(), 'status' => 'paid', 'paid_at' => Carbon::now()->subMonth()->startOfMonth()->addDays(5)]);
+        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
+        
+        // Lucas
+        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => Carbon::now()->subMonth()->startOfMonth()->addDays(9)->toDateString(), 'status' => 'overdue']);
+        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
 
-            $coresBairros = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+        // Gabriel
+        Mensalidade::create(['aluno_id' => $aluno3->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
 
-            if (isset($bairrosData['features'])) {
-                foreach ($bairrosData['features'] as $index => $feature) {
-                    $nome = $feature['properties']['nm_bairro'] ?? $feature['properties']['nome'] ?? 'Bairro ' . ($index + 1);
-                    $nome = mb_convert_case($nome, MB_CASE_TITLE, "UTF-8");
-                    $cor = $coresBairros[$index % count($coresBairros)];
+        // 8. Produtos
+        $prodUniforme = Produto::create(['name' => 'Uniforme Oficial Escolinha', 'price' => 85.00, 'stock_quantity' => 20]);
+        $prodMeiao = Produto::create(['name' => 'Meião Verde/Branco', 'price' => 25.00, 'stock_quantity' => 50]);
+        $prodSqueeze = Produto::create(['name' => 'Garrafa Térmica Squeeze', 'price' => 35.00, 'stock_quantity' => 15]);
 
-                    $bairro = Bairro::create([
-                        'nome' => $nome,
-                        'cor' => $cor,
-                        'geojson' => $feature['geometry']
-                    ]);
-                    $bairrosNoBanco[$nome] = $bairro->id;
-                }
-            }
-        }
+        // 9. Fluxo de Caixa (Lançamentos de teste)
+        // Receitas anteriores
+        FluxoCaixa::create(['type' => 'income', 'origin_type' => 'mensalidade', 'origin_id' => 1, 'description' => 'Mensalidade - Aluno: Pedro Silva', 'amount' => 120.00, 'date' => Carbon::now()->subMonth()->toDateString()]);
+        
+        // Venda produto
+        $v1 = VendaProduto::create(['produto_id' => $prodUniforme->id, 'quantity' => 1, 'total_amount' => 85.00, 'date' => Carbon::now()->subDays(10)->toDateString()]);
+        FluxoCaixa::create(['type' => 'income', 'origin_type' => 'venda_produto', 'origin_id' => $v1->id, 'description' => 'Venda Loja - Uniforme Oficial Escolinha (x1)', 'amount' => 85.00, 'date' => Carbon::now()->subDays(10)->toDateString()]);
 
-        // 3. Criar Clubes/Ministérios para cada igreja
-        $nomesClubes = [
-            ['nome' => 'Aventureiros Estrelas', 'tipo' => 'Infantil'],
-            ['nome' => 'Desbravadores', 'tipo' => 'Jovem'],
-            ['nome' => 'Ação Solidária Adventista (ASA)', 'tipo' => 'Assistencial'],
-            ['nome' => 'Ministério da Mulher', 'tipo' => 'Mulheres'],
-        ];
+        // Despesas
+        FluxoCaixa::create(['type' => 'expense', 'origin_type' => 'avulso', 'description' => 'Aluguel Quadra Sintética', 'amount' => 450.00, 'date' => Carbon::now()->subDays(15)->toDateString()]);
+        FluxoCaixa::create(['type' => 'expense', 'origin_type' => 'avulso', 'description' => 'Compra de Bolas Novas', 'amount' => 180.00, 'date' => Carbon::now()->subDays(8)->toDateString()]);
+        FluxoCaixa::create(['type' => 'expense', 'origin_type' => 'avulso', 'description' => 'Conta de Energia/Luz', 'amount' => 120.00, 'date' => Carbon::now()->subDays(2)->toDateString()]);
 
-        $clubesNoBanco = [];
-        foreach ($igrejasNoBanco as $igreja) {
-            foreach ($nomesClubes as $clubeData) {
-                $clube = Clube::create([
-                    'nome' => $clubeData['nome'] . ' (' . str_replace('Igreja ', '', $igreja->nome) . ')',
-                    'tipo' => $clubeData['tipo'],
-                    'igreja_id' => $igreja->id
-                ]);
-                $clubesNoBanco[] = $clube;
-            }
-        }
+        // 10. Avaliações Técnicas
+        Avaliacao::create([
+            'aluno_id' => $aluno1->id,
+            'professor_id' => $prof1->id,
+            'passe' => 8,
+            'chute' => 7,
+            'dominio' => 9,
+            'condicionamento' => 8,
+            'disciplina' => 10,
+            'parecer' => 'Pedro demonstra excelente técnica e domínio de bola. Precisa focar um pouco mais nos treinos de finalização.',
+            'date' => Carbon::now()->subDays(5)->toDateString(),
+        ]);
 
-        // IDs de bairros conhecidos (ou os primeiros)
-        $idsBairros = array_values($bairrosNoBanco);
-        if (empty($idsBairros))
-            $idsBairros = [1];
-
-        // 4. Criar Ações variadas
-        $acoesTemplates = [
-            ['titulo' => 'Feira de Saúde', 'desc' => 'Atendimento médico e nutricional gratuito.', 'min_atend' => 100, 'max_atend' => 300],
-            ['titulo' => 'Sopão Solidário', 'desc' => 'Distribuição de sopa quente para moradores de rua.', 'min_atend' => 50, 'max_atend' => 150],
-            ['titulo' => 'Curso de Culinária Saudável', 'desc' => 'Ensinando receitas vegetarianas para a comunidade.', 'min_atend' => 20, 'max_atend' => 40],
-            ['titulo' => 'Mutirão de Limpeza', 'desc' => 'Limpeza de praças e bueiros para evitar dengue.', 'min_atend' => 15, 'max_atend' => 45],
-            ['titulo' => 'Projeto Quebrando o Silêncio', 'desc' => 'Palestra contra violência doméstica.', 'min_atend' => 80, 'max_atend' => 200],
-            ['titulo' => 'Escola Cristã de Férias', 'desc' => 'Atividades bíblicas e recreativas para crianças.', 'min_atend' => 50, 'max_atend' => 120],
-        ];
-
-        // Criar 30 ações aleatórias (10 por igreja em média)
-        foreach ($clubesNoBanco as $idx => $clube) {
-            for ($i = 0; $i < 4; $i++) {
-                $tpl = $acoesTemplates[array_rand($acoesTemplates)];
-                $status = (rand(0, 10) > 3) ? 'realizada' : 'programada';
-                $pessoas = ($status == 'realizada') ? rand($tpl['min_atend'], $tpl['max_atend']) : 0;
-
-                // Data aleatória (30 dias no passado até 30 no futuro)
-                $offset = rand(-30, 30);
-                $data = now()->addDays($offset);
-
-                Acao::create([
-                    'titulo' => $tpl['titulo'],
-                    'descricao' => $tpl['desc'],
-                    'clube_id' => $clube->id,
-                    'bairro_id' => $idsBairros[array_rand($idsBairros)],
-                    'igreja_id' => $clube->igreja_id,
-                    'data_inicio' => $data,
-                    'data_fim' => $data->addHours(4),
-                    'status' => $status,
-                    'status_moderacao' => 'aprovada',
-                    'pessoas_atendidas' => $pessoas,
-                    'lat' => $igrejasNoBanco[0]->lat + (rand(-50, 50) / 1000), // Random jitter around center
-                    'lng' => $igrejasNoBanco[0]->lng + (rand(-50, 50) / 1000),
-                    'fotos' => [
-                        'https://picsum.photos/seed/' . rand(1, 1000) . '/800/600',
-                        'https://picsum.photos/seed/' . rand(1, 1000) . '/800/600'
-                    ]
-                ]);
-            }
-        }
+        Avaliacao::create([
+            'aluno_id' => $aluno2->id,
+            'professor_id' => $prof2->id,
+            'passe' => 6,
+            'chute' => 8,
+            'dominio' => 7,
+            'condicionamento' => 9,
+            'disciplina' => 8,
+            'parecer' => 'Lucas tem grande condicionamento físico e força física. Estamos aprimorando o passe de curta distância.',
+            'date' => Carbon::now()->subDays(5)->toDateString(),
+        ]);
     }
 }

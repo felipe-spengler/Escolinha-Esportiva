@@ -16,8 +16,8 @@ return new class extends Migration {
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('admin_igreja'); // super_admin, admin_igreja
-            $table->unsignedBigInteger('igreja_id')->nullable();
+            $table->string('role')->default('admin'); // admin, professor
+            $table->string('api_token', 80)->unique()->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

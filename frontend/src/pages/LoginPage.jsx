@@ -1,68 +1,100 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import api from '../api';
 
-const LoginPage = ({ onLogin }) => {
-    const [cred, setCred] = useState({ email: '', password: '' });
-    const navigate = useNavigate();
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // MOCK AUTH
-        const mockUser = {
-            name: cred.email.includes('admin') ? 'Admin Igreja' : 'Super Admin',
-            email: cred.email,
-            role: cred.email.includes('super') ? 'super_admin' : 'admin_igreja',
-            igreja_id: cred.email.includes('admin') ? 1 : null
-        };
-        onLogin(mockUser);
-        navigate('/');
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-    return (
-        <div className="min-h-full w-full flex flex-col items-center justify-start p-6 pb-32 bg-slate-50 animate-fade-in">
-            <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 my-auto">
-                <div className="text-center mb-10">
-                    <div className="bg-indigo-600 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200">
-                        <LogIn className="text-white w-8 h-8" />
-                    </div>
-                    <h2 className="text-3xl font-black text-slate-800">Painel Restrito</h2>
-                    <p className="text-slate-500 mt-2 font-medium">Acesse para gerenciar o impacto da sua rede.</p>
-                </div>
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      const { token, role, user } = res.data;
+      
+      localStorage.setItem('token', token);
+      onLogin({ role, user });
 
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">E-mail Corporativo</label>
-                        <input
-                            type="email"
-                            required
-                            value={cred.email}
-                            onChange={e => setCred({ ...cred, email: e.target.value })}
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 transition-all font-bold text-slate-700"
-                            placeholder="exemplo@email.com"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Sua Senha</label>
-                        <input
-                            type="password"
-                            required
-                            value={cred.password}
-                            onChange={e => setCred({ ...cred, password: e.target.value })}
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 transition-all font-bold text-slate-700"
-                            placeholder="••••••••"
-                        />
-                    </div>
-                    <button className="w-full bg-slate-900 hover:bg-black text-white py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all active:scale-[0.98]">
-                        Entrar no Sistema
-                    </button>
-                    <div className="text-center pt-4">
-                        <p className="text-xs text-slate-400 italic">Dica: admin@projeto.com ou super@projeto.com</p>
-                    </div>
-                </form>
-            </div>
+      if (role === 'responsavel') {
+        navigate('/portal');
+      } else {
+        navigate('/admin');
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Falha ao realizar login. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 relative overflow-hidden">
+      {/* Background gradients */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
+
+      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 mb-4">
+            <span className="text-3xl">⚽</span>
+          </div>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Arena Escolinha</h2>
+          <p className="text-slate-400 mt-2 text-sm">Entre com suas credenciais para acessar o portal</p>
         </div>
-    );
-};
+
+        {error && (
+          <div className="bg-red-500/15 border border-red-500/30 text-red-200 text-sm px-4 py-3 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">E-mail</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="seuemail@exemplo.com"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white rounded-xl px-4 py-3 text-sm transition-all outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Senha</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white rounded-xl px-4 py-3 text-sm transition-all outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 text-sm uppercase tracking-wider"
+          >
+            {loading ? 'Entrando...' : 'Entrar no Sistema'}
+          </button>
+        </form>
+
+        <div className="mt-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
+          Escolinha de Futebol • Painel de Controle v1.0
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default LoginPage;
