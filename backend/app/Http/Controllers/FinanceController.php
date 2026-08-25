@@ -76,23 +76,45 @@ class FinanceController extends Controller
         $amount = $request->amount;
         $dueDate = $request->due_date;
 
-        $alunosAtivos = Aluno::where('status', 'active')->get();
+        $alunosAtivos = Aluno::with('responsavel')->where('status', 'active')->get();
         $criadas = 0;
+        
+        $asaasService = new \App\Services\AsaasService();
 
         foreach ($alunosAtivos as $aluno) {
-            // Evitar duplicidade de mensalidade para o mesmo aluno com mesma data de vencimento
             $exists = Mensalidade::where('aluno_id', $aluno->id)
                 ->where('due_date', $dueDate)
                 ->exists();
 
-            if (!$exists) {
-                Mensalidade::create([
-                    'aluno_id' => $aluno->id,
-                    'amount' => $amount,
-                    'due_date' => $dueDate,
-                    'status' => 'pending',
-                ]);
-                $criadas++;
+            if (!$exists && $aluno->responsavel) {
+                try {
+                    $mensalidade = Mensalidade::create([
+                        'aluno_id' => $aluno->id,
+                        'amount' => $amount,
+                        'due_date' => $dueDate,
+                        'status' => 'pending',
+                    ]);
+
+                    $payment = $asaasService->createPayment(
+                        $aluno->responsavel,
+                        $amount,
+                        "Mensalidade Escolinha - Aluno: {$aluno->name}",
+                        (string) $mensalidade->id,
+                        $dueDate
+                    );
+
+                    if (isset($payment['id'])) {
+                        $mensalidade->update([
+                            'asaas_payment_id' => $payment['id'],
+                            'payment_url' => $payment['invoiceUrl'] ?? null, // invoiceUrl contains the boleto/pix checkout
+                            'invoice_url' => $payment['bankSlipUrl'] ?? null,
+                        ]);
+                    }
+
+                    $criadas++;
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Erro Asaas Mensalidade ID {$mensalidade->id}: " . $e->getMessage());
+                }
             }
         }
 

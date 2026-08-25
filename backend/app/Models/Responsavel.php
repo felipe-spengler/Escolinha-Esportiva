@@ -17,6 +17,7 @@ class Responsavel extends Authenticatable
         'password',
         'phone',
         'cpf',
+        'asaas_customer_id',
     ];
 
     protected $hidden = [

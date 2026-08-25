@@ -11,6 +11,9 @@ use App\Http\Controllers\PortalController;
 // --- PUBLIC ROUTE ---
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+// --- WEBHOOKS ---
+Route::post('/webhook/asaas', [\App\Http\Controllers\WebhookAsaasController::class, 'handle']);
+
 // --- PROTECTED ROUTES ---
 Route::middleware('api.auth')->group(function () {
     

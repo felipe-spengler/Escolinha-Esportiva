@@ -159,6 +159,23 @@ Aba Desempenho: Mostra os dados inseridos na última Avaliação Técnica/Físic
 
 Aba Financeiro (Crucial): Listagem das mensalidades do filho.
 
-Se estiver pendente, exibe um botão "Pagar via PIX" que abre um Modal exibindo o pix_code para o pai clicar em "Copiar Código".
+Se estiver pendente, exibe um botão "Pagar via PIX" que abre um Modal exibindo o pix_code para o pai clicar em "Copiar Código" (Se usar PIX manual). Com a integração Asaas, o botão exibirá o link de pagamento ou QRCode dinâmico do Asaas.
 
-Exibe um aviso claro de que, após o pagamento, a baixa é manual e o comprovante deve ser enviado ao administrador.
+Exibe um aviso claro de que, após o pagamento, a baixa é manual (PIX direto) ou automática via Webhook (Asaas).
+
+---
+
+🚀 4. Módulos Adicionais (Atualização de Escopo)
+
+🏆 4.1. Gestão de Campeonatos e Desempenho
+- Campeonatos: Cadastro de torneios com data de início e fim.
+- Equipes: Divisão por categorias (ex: Sub-11, Sub-15) vinculadas a um campeonato.
+- Inscrições (Súmula): Adição de jogadores à equipe. O jogador pode ser um `aluno_id` (matriculado na escolinha) ou `nome_externo` (times convidados/amistosos). Taxa de inscrição é isenta na versão atual.
+- Jogos & Resultados: Registro de partidas (Casa vs Visitante, placar, data, local).
+- Estatísticas do Jogador: A cada jogo, contabilizar Gols Feitos, Gols Sofridos, Participação e Craque do Jogo. Os dados de alunos matriculados vão alimentar diretamente o Portal do Aluno/Pais.
+- Agenda Dinâmica: Tabela `eventos` para agendar treinos extras, torneios e amistosos.
+
+💳 4.2. Integração ASAAS (Gateway de Pagamento)
+- Automação Financeira: Criação de Clientes (Customer) no Asaas para cada Responsável/Aluno.
+- Mensalidades & Cobranças: Geração automática de boletos/PIX/Cartão de Crédito via API do Asaas ao invés de apenas Pix manual.
+- Webhooks: Endpoint seguro para receber confirmações de pagamento do Asaas e dar baixa automaticamente na tabela `mensalidades`, gerando o registro de `fluxo_caixa`.

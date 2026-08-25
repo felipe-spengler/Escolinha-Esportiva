@@ -13,6 +13,9 @@ class Mensalidade extends Model
         'paid_at',
         'status',
         'pix_code',
+        'asaas_payment_id',
+        'payment_url',
+        'invoice_url',
     ];
 
     protected $casts = [
