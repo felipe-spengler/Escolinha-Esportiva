@@ -22,7 +22,7 @@ services:
     environment:
       - APP_NAME=ImpactoSocial
       - APP_ENV=production
-      - APP_KEY=base64:66D7D3C6E5A4B3C2D1E0F9A8B7C6D5E4F3A2B1C0D9E= # Chave de 32 bytes base64
+      - APP_KEY=base64:66D7D3C6E5A4B3C2D1E0F9A8B7C6D5E4F3A2B1C0D9E=
       - APP_DEBUG=true
       - APP_URL=https://igreja.techinteligente.site
       - DB_CONNECTION=mysql
