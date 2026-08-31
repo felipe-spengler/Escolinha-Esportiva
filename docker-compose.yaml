@@ -6,7 +6,7 @@ services:
     # container_name: projeto-igreja-db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: projeto_igreja
+      MYSQL_DATABASE: escolinha_esporte
       MYSQL_ROOT_PASSWORD: root
     # ports:
     #   - "3306:3306"
@@ -20,27 +20,27 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     environment:
-      - APP_NAME=ImpactoSocial
+      - APP_NAME=EscolinhaEsporte
       - APP_ENV=production
       - APP_KEY=base64:66D7D3C6E5A4B3C2D1E0F9A8B7C6D5E4F3A2B1C0D9E=
       - APP_DEBUG=true
-      - APP_URL=https://igreja.techinteligente.site
+      - APP_URL=https://escolinha.techinteligente.site
       - DB_CONNECTION=mysql
       - DB_HOST=db
       - DB_PORT=3306
-      - DB_DATABASE=projeto_igreja
+      - DB_DATABASE=escolinha_esporte
       - DB_USERNAME=root
       - DB_PASSWORD=root
     depends_on:
       - db
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.projeto-backend.rule=Host(`igreja.techinteligente.site`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.projeto-backend.priority=100"
-      - traefik.http.routers.projeto-backend.entryPoints=https
-      - traefik.http.routers.projeto-backend.tls=true
-      - traefik.http.routers.projeto-backend.tls.certresolver=letsencrypt
-      - traefik.http.services.projeto-backend.loadbalancer.server.port=80
+      - "traefik.http.routers.escolinha-backend.rule=Host(`escolinha.techinteligente.site`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.escolinha-backend.priority=100"
+      - traefik.http.routers.escolinha-backend.entryPoints=https
+      - traefik.http.routers.escolinha-backend.tls=true
+      - traefik.http.routers.escolinha-backend.tls.certresolver=letsencrypt
+      - traefik.http.services.escolinha-backend.loadbalancer.server.port=80
 
   frontend:
     build:
@@ -54,15 +54,15 @@ services:
     #   - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=https://igreja.techinteligente.site/api
+      - VITE_API_URL=https://escolinha.techinteligente.site/api
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.projeto-frontend.rule=Host(`igreja.techinteligente.site`)"
-      - "traefik.http.routers.projeto-frontend.priority=10"
-      - traefik.http.routers.projeto-frontend.entryPoints=https
-      - traefik.http.routers.projeto-frontend.tls=true
-      - traefik.http.routers.projeto-frontend.tls.certresolver=letsencrypt
-      - traefik.http.services.projeto-frontend.loadbalancer.server.port=5173
+      - "traefik.http.routers.escolinha-frontend.rule=Host(`escolinha.techinteligente.site`)"
+      - "traefik.http.routers.escolinha-frontend.priority=10"
+      - traefik.http.routers.escolinha-frontend.entryPoints=https
+      - traefik.http.routers.escolinha-frontend.tls=true
+      - traefik.http.routers.escolinha-frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.escolinha-frontend.loadbalancer.server.port=5173
 
 volumes:
   dbdata:
