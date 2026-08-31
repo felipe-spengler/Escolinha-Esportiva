@@ -9,6 +9,6 @@ export default defineConfig({
     react()
   ],
   server: {
-    allowedHosts: ['igreja.techinteligente.site']
+    allowedHosts: ['igreja.techinteligente.site', 'escolinha.techinteligente.site']
   }
 })
