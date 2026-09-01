@@ -18,8 +18,8 @@ services:
       - coolify
       - default
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     working_dir: /var/www/html
     environment:
@@ -36,24 +36,6 @@ services:
       - DB_PASSWORD=root
     depends_on:
       - db
-
-
-  frontend:
-    networks:
-      - coolify
-      - default
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    # ports:
-    #   - "5173:5173"
-    # volumes:
-    #   - ./frontend:/app
-    #   - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=https://api.escolinha.techinteligente.site/api
 
 
 volumes:
