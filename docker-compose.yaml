@@ -53,7 +53,7 @@ services:
     #   - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=https://escolinha.techinteligente.site/api
+      - VITE_API_URL=https://api.escolinha.techinteligente.site/api
 
 
 volumes:
