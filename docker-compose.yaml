@@ -39,6 +39,7 @@ services:
     labels:
       - traefik.enable=true
       - "traefik.http.routers.escolinha-backend.rule=Host(`escolinha.techinteligente.site`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.escolinha-backend.service=escolinha-backend"
       - "traefik.http.routers.escolinha-backend.priority=100"
       - traefik.http.routers.escolinha-backend.entryPoints=https
       - traefik.http.routers.escolinha-backend.tls=true
@@ -64,6 +65,7 @@ services:
     labels:
       - traefik.enable=true
       - "traefik.http.routers.escolinha-frontend.rule=Host(`escolinha.techinteligente.site`)"
+      - "traefik.http.routers.escolinha-frontend.service=escolinha-frontend"
       - "traefik.http.routers.escolinha-frontend.priority=10"
       - traefik.http.routers.escolinha-frontend.entryPoints=https
       - traefik.http.routers.escolinha-frontend.tls=true
