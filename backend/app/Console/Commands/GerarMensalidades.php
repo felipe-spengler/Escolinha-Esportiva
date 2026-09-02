@@ -28,65 +28,75 @@ class GerarMensalidades extends Command
         $asaasService = new AsaasService();
         $criadas = 0;
 
-        $currentYear = date('Y');
-        $currentMonth = date('m');
+        $now = Carbon::today();
+        
+        // Vamos checar o mês atual e o próximo mês
+        $monthsToCheck = [
+            $now->copy(),
+            $now->copy()->addMonth()
+        ];
 
         foreach ($alunosAtivos as $aluno) {
             if (!$aluno->responsavel) {
                 continue;
             }
 
-            // O vencimento é o dia configurado no aluno, no mês atual
             $dueDay = $aluno->dia_vencimento ?: 10;
-            
-            // Garantir que o dia existe no mês (ex: dia 31 em fevereiro)
-            $lastDayOfMonth = date('t', strtotime("$currentYear-$currentMonth-01"));
-            if ($dueDay > $lastDayOfMonth) {
-                $dueDay = $lastDayOfMonth;
-            }
-
-            $dueDate = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $dueDay);
             $amount = $aluno->mensalidade_valor ?: 120.00;
 
-            // Verificar se já existe mensalidade no mês
-            $exists = Mensalidade::where('aluno_id', $aluno->id)
-                ->whereMonth('due_date', $currentMonth)
-                ->whereYear('due_date', $currentYear)
-                ->exists();
+            foreach ($monthsToCheck as $monthDate) {
+                $currentYear = $monthDate->year;
+                $currentMonth = $monthDate->month;
+                
+                $lastDayOfMonth = $monthDate->daysInMonth;
+                $actualDueDay = $dueDay > $lastDayOfMonth ? $lastDayOfMonth : $dueDay;
+                
+                $dueDateStr = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $actualDueDay);
+                $dueDateObj = Carbon::parse($dueDateStr);
 
-            if (!$exists) {
-                try {
-                    $mensalidade = Mensalidade::create([
-                        'aluno_id' => $aluno->id,
-                        'amount' => $amount,
-                        'due_date' => $dueDate,
-                        'status' => 'pending',
-                    ]);
+                // Gerar se faltar 15 dias ou menos para o vencimento (ou se já passou)
+                if ($dueDateObj->lessThanOrEqualTo($now->copy()->addDays(15))) {
+                    
+                    $exists = Mensalidade::where('aluno_id', $aluno->id)
+                        ->whereMonth('due_date', $currentMonth)
+                        ->whereYear('due_date', $currentYear)
+                        ->exists();
 
-                    $payment = $asaasService->createPayment(
-                        $aluno->responsavel,
-                        $amount,
-                        "Mensalidade Escolinha - {$currentMonth}/{$currentYear} - Aluno: {$aluno->name}",
-                        (string) $mensalidade->id,
-                        $dueDate,
-                        $juros,
-                        $multa
-                    );
+                    if (!$exists) {
+                        try {
+                            $mensalidade = Mensalidade::create([
+                                'aluno_id' => $aluno->id,
+                                'amount' => $amount,
+                                'due_date' => $dueDateStr,
+                                'status' => 'pending',
+                            ]);
 
-                    if (isset($payment['id'])) {
-                        $mensalidade->update([
-                            'asaas_payment_id' => $payment['id'],
-                            'payment_url' => $payment['invoiceUrl'] ?? null,
-                            'invoice_url' => $payment['bankSlipUrl'] ?? null,
-                            'pix_code' => $payment['pix_payload'] ?? null,
-                        ]);
+                            $payment = $asaasService->createPayment(
+                                $aluno->responsavel,
+                                $amount,
+                                "Mensalidade Escolinha - {$currentMonth}/{$currentYear} - Aluno: {$aluno->name}",
+                                (string) $mensalidade->id,
+                                $dueDateStr,
+                                $juros,
+                                $multa
+                            );
+
+                            if (isset($payment['id'])) {
+                                $mensalidade->update([
+                                    'asaas_payment_id' => $payment['id'],
+                                    'payment_url' => $payment['invoiceUrl'] ?? null,
+                                    'invoice_url' => $payment['bankSlipUrl'] ?? null,
+                                    'pix_code' => $payment['pix_payload'] ?? null,
+                                ]);
+                            }
+
+                            $criadas++;
+                            $this->info("Mensalidade gerada para {$aluno->name} ({$currentMonth}/{$currentYear})");
+                        } catch (\Exception $e) {
+                            Log::error("Erro Asaas Mensalidade (Cron) ID {$mensalidade->id}: " . $e->getMessage());
+                            $this->error("Erro ao gerar para {$aluno->name}: " . $e->getMessage());
+                        }
                     }
-
-                    $criadas++;
-                    $this->info("Mensalidade gerada para {$aluno->name}");
-                } catch (\Exception $e) {
-                    Log::error("Erro Asaas Mensalidade (Cron) ID {$mensalidade->id}: " . $e->getMessage());
-                    $this->error("Erro ao gerar para {$aluno->name}: " . $e->getMessage());
                 }
             }
         }

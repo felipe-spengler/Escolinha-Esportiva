@@ -62,7 +62,6 @@ Route::middleware('api.auth')->group(function () {
     // Mensalidades
     Route::get('/mensalidades', [FinanceController::class, 'listMensalidades']);
     Route::post('/mensalidades/gerar', [FinanceController::class, 'gerarMensalidadesMes']);
-    Route::patch('/mensalidades/{mensalidade}/pix', [FinanceController::class, 'updatePix']);
     Route::post('/mensalidades/{mensalidade}/baixa', [FinanceController::class, 'darBaixaManual']);
 
     // Settings

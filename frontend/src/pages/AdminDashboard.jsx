@@ -40,7 +40,6 @@ function AdminDashboard({ user, logout }) {
   const [settingsForm, setSettingsForm] = useState({ juros_mensal: '1.00', multa_atraso: '2.00' });
   const [mensalidadesList, setMensalidadesList] = useState([]);
   const [mensalidadeFilter, setMensalidadeFilter] = useState('');
-  const [pixInput, setPixInput] = useState({ id: null, pix_code: '' });
   
   // Avaliações History
   const [avaliacoesList, setAvaliacoesList] = useState([]);
@@ -380,17 +379,6 @@ function AdminDashboard({ user, logout }) {
       fetchDashboardData();
     } catch (e) {
       alert('Erro ao processar baixa');
-    }
-  };
-
-  const handleSavePixCode = async (id) => {
-    try {
-      await api.patch(`/mensalidades/${id}/pix`, { pix_code: pixInput.pix_code });
-      setPixInput({ id: null, pix_code: '' });
-      fetchAllData();
-      alert('Código PIX atualizado com sucesso!');
-    } catch (e) {
-      alert('Erro ao atualizar código PIX');
     }
   };
 
@@ -1266,10 +1254,10 @@ function AdminDashboard({ user, logout }) {
                         <div>
                           <div className="text-white font-bold">{m.aluno?.name}</div>
                           <div className="text-slate-500 text-xs">Vence: {new Date(m.due_date).toLocaleDateString('pt-BR')} | R$ {parseFloat(m.amount).toFixed(2)}</div>
-                          {m.pix_code ? (
-                            <div className="text-[10px] text-emerald-500 font-semibold mt-1">PIX Configurado</div>
-                          ) : (
-                            <div className="text-[10px] text-red-500 font-semibold mt-1">Sem PIX</div>
+                          {m.status === 'paid' && m.paid_at && (
+                            <div className="text-[10px] text-emerald-500 font-semibold mt-1">
+                              Pago em: {new Date(m.paid_at).toLocaleDateString('pt-BR')}
+                            </div>
                           )}
                         </div>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -1281,32 +1269,17 @@ function AdminDashboard({ user, logout }) {
                         </span>
                       </div>
 
-                      {/* PIX line input and Action buttons */}
-                      <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-slate-850/80 items-stretch sm:items-center">
-                        <div className="flex-1 flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Inserir linha PIX Copia/Cola..."
-                            value={pixInput.id === m.id ? pixInput.pix_code : ''}
-                            onChange={(e) => setPixInput({ id: m.id, pix_code: e.target.value })}
-                            className="flex-1 bg-slate-950 border border-slate-850 text-white rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-500"
-                          />
-                          <button
-                            onClick={() => handleSavePixCode(m.id)}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs"
-                          >
-                            Salvar PIX
-                          </button>
-                        </div>
-                        {m.status !== 'paid' && (
+                      {/* Action buttons */}
+                      {m.status !== 'paid' && (
+                        <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-slate-850/80 items-stretch sm:items-center justify-end">
                           <button
                             onClick={() => handleBaixaManual(m.id)}
                             className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 px-4 rounded-lg text-xs"
                           >
                             Baixa Manual
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

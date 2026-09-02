@@ -28,19 +28,6 @@ class FinanceController extends Controller
         return response()->json($query->orderBy('due_date', 'desc')->get());
     }
 
-    public function updatePix(Request $request, Mensalidade $mensalidade)
-    {
-        $request->validate([
-            'pix_code' => 'required|string',
-        ]);
-
-        $mensalidade->update([
-            'pix_code' => $request->pix_code,
-        ]);
-
-        return response()->json($mensalidade);
-    }
-
     public function darBaixaManual(Mensalidade $mensalidade)
     {
         if ($mensalidade->status === 'paid') {
