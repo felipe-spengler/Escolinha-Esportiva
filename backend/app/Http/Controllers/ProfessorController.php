@@ -112,4 +112,43 @@ class ProfessorController extends Controller
 
         return response()->json($avaliacoes);
     }
+
+    public function listAllAvaliacoes(Request $request)
+    {
+        $query = Avaliacao::with(['aluno', 'professor:id,name']);
+
+        if ($request->has('turma_id') && $request->turma_id) {
+            $query->whereHas('aluno.turmas', function ($q) use ($request) {
+                $q->where('turmas.id', $request->turma_id);
+            });
+        }
+
+        if ($request->has('aluno_id') && $request->aluno_id) {
+            $query->where('aluno_id', $request->aluno_id);
+        }
+
+        return response()->json($query->orderBy('date', 'desc')->get());
+    }
+
+    public function updateAvaliacao(Request $request, Avaliacao $avaliacao)
+    {
+        $data = $request->validate([
+            'passe' => 'required|integer|min:1|max:10',
+            'chute' => 'required|integer|min:1|max:10',
+            'dominio' => 'required|integer|min:1|max:10',
+            'condicionamento' => 'required|integer|min:1|max:10',
+            'disciplina' => 'required|integer|min:1|max:10',
+            'parecer' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        $avaliacao->update($data);
+        return response()->json($avaliacao);
+    }
+
+    public function deleteAvaliacao(Avaliacao $avaliacao)
+    {
+        $avaliacao->delete();
+        return response()->json(['message' => 'Avaliação excluída com sucesso!']);
+    }
 }

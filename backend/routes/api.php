@@ -53,8 +53,11 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/chamada', [ProfessorController::class, 'saveChamada']);
 
     // Avaliações (Assessments)
+    Route::get('/avaliacoes', [ProfessorController::class, 'listAllAvaliacoes']);
     Route::get('/avaliacoes/{aluno}', [ProfessorController::class, 'listAvaliacoes']);
     Route::post('/avaliacoes', [ProfessorController::class, 'storeAvaliacao']);
+    Route::put('/avaliacoes/{avaliacao}', [ProfessorController::class, 'updateAvaliacao']);
+    Route::delete('/avaliacoes/{avaliacao}', [ProfessorController::class, 'deleteAvaliacao']);
 
     // Mensalidades
     Route::get('/mensalidades', [FinanceController::class, 'listMensalidades']);

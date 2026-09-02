@@ -38,11 +38,11 @@ class PortalController extends Controller
 
         $frequenciaPorcentagem = $totalClasses > 0 ? round(($presentClasses / $totalClasses) * 100) : 100;
 
-        // Fetch last assessment
-        $lastAvaliacao = Avaliacao::where('aluno_id', $aluno->id)
+        // Fetch all assessments
+        $avaliacoes = Avaliacao::where('aluno_id', $aluno->id)
             ->with('professor:id,name')
             ->orderBy('date', 'desc')
-            ->first();
+            ->get();
 
         // Fetch all billing records
         $mensalidades = Mensalidade::where('aluno_id', $aluno->id)
@@ -60,7 +60,7 @@ class PortalController extends Controller
             'aluno' => $aluno->load('turmas'),
             'frequencia_porcentagem' => $frequenciaPorcentagem,
             'frequencias' => $frequencias,
-            'ultima_avaliacao' => $lastAvaliacao,
+            'avaliacoes' => $avaliacoes,
             'mensalidades' => $mensalidades,
         ]);
     }

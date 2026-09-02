@@ -224,42 +224,52 @@ function ParentPortal({ logout }) {
                       <span>📊</span> Avaliação Física & Técnica
                     </h3>
 
-                    {detalhes.ultima_avaliacao ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                          <div className="space-y-4">
-                            {[
-                              { label: 'Passe', val: detalhes.ultima_avaliacao.passe },
-                              { label: 'Chute', val: detalhes.ultima_avaliacao.chute },
-                              { label: 'Domínio de Bola', val: detalhes.ultima_avaliacao.dominio },
-                              { label: 'Condicionamento Físico', val: detalhes.ultima_avaliacao.condicionamento },
-                              { label: 'Disciplina / Postura', val: detalhes.ultima_avaliacao.disciplina },
-                            ].map((item, idx) => (
-                              <div key={idx}>
-                                <div className="flex justify-between text-sm mb-1.5">
-                                  <span className="font-semibold text-slate-300">{item.label}</span>
-                                  <span className="font-bold text-emerald-400">{item.val}/10</span>
-                                </div>
-                                <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
-                                  <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style={{ width: `${item.val * 10}%` }} />
-                                </div>
+                    {detalhes.avaliacoes && detalhes.avaliacoes.length > 0 ? (
+                      <div className="space-y-8">
+                        {detalhes.avaliacoes.map((av, index) => (
+                          <div key={av.id} className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-950/20 p-6 rounded-3xl border border-slate-800/40">
+                            <div>
+                              <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-white font-bold">Avaliação {new Date(av.date).toLocaleDateString('pt-BR')}</h4>
+                                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-full text-xs border border-emerald-500/20">
+                                  Média: {((av.passe + av.chute + av.dominio + av.condicionamento + av.disciplina) / 5).toFixed(1)}
+                                </span>
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                              <div className="space-y-4">
+                                {[
+                                  { label: 'Passe', val: av.passe },
+                                  { label: 'Chute', val: av.chute },
+                                  { label: 'Domínio de Bola', val: av.dominio },
+                                  { label: 'Condicionamento Físico', val: av.condicionamento },
+                                  { label: 'Disciplina / Postura', val: av.disciplina },
+                                ].map((item, idx) => (
+                                  <div key={idx}>
+                                    <div className="flex justify-between text-sm mb-1.5">
+                                      <span className="font-semibold text-slate-300">{item.label}</span>
+                                      <span className="font-bold text-emerald-400">{item.val}/10</span>
+                                    </div>
+                                    <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                                      <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style={{ width: `${item.val * 10}%` }} />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
 
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-                          <div>
-                            <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">Parecer do Professor</span>
-                            <p className="text-slate-300 text-sm italic mt-3 whitespace-pre-wrap">
-                              "{detalhes.ultima_avaliacao.parecer || 'Sem parecer descritivo.'}"
-                            </p>
+                            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                              <div>
+                                <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">Parecer do Professor</span>
+                                <p className="text-slate-300 text-sm italic mt-3 whitespace-pre-wrap">
+                                  "{av.parecer || 'Sem parecer descritivo.'}"
+                                </p>
+                              </div>
+                              <div className="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
+                                <div>Avaliado por: <strong className="text-slate-300">{av.professor?.name}</strong></div>
+                                <div>Data: {new Date(av.date).toLocaleDateString('pt-BR')}</div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
-                            <div>Avaliado por: <strong className="text-slate-300">{detalhes.ultima_avaliacao.professor.name}</strong></div>
-                            <div>Data: {new Date(detalhes.ultima_avaliacao.date).toLocaleDateString('pt-BR')}</div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-12 text-slate-500 italic">Nenhuma avaliação técnica feita ainda para este aluno.</div>
