@@ -4,7 +4,7 @@ test.describe('Autenticação de Administrador', () => {
   test('deve conseguir fazer login com credenciais validas', async ({ page }) => {
     await page.goto('/login');
     
-    await expect(page).toHaveTitle(/Escolinha Esportiva/);
+    await expect(page).toHaveTitle(/Arena - Gestão Esportiva/);
     await expect(page.getByText('Arena Escolinha')).toBeVisible();
 
     await page.getByPlaceholder('seuemail@exemplo.com').fill('admin@admin.com');
