@@ -185,6 +185,19 @@ class DatabaseSeeder extends Seeder
             'date' => Carbon::now()->subDays(5)->toDateString(),
         ]);
 
+        // Older evaluation for Pedro to show history
+        Avaliacao::create([
+            'aluno_id' => $aluno1->id,
+            'professor_id' => $prof1->id,
+            'passe' => 6,
+            'chute' => 5,
+            'dominio' => 7,
+            'condicionamento' => 6,
+            'disciplina' => 9,
+            'parecer' => 'Pedro iniciou na escolinha mostrando talento, mas o condicionamento físico precisa melhorar.',
+            'date' => Carbon::now()->subMonths(3)->toDateString(),
+        ]);
+
         Avaliacao::create([
             'aluno_id' => $aluno2->id,
             'professor_id' => $prof2->id,
@@ -195,6 +208,19 @@ class DatabaseSeeder extends Seeder
             'disciplina' => 8,
             'parecer' => 'Lucas tem grande condicionamento físico e força física. Estamos aprimorando o passe de curta distância.',
             'date' => Carbon::now()->subDays(5)->toDateString(),
+        ]);
+        
+        // Mateus (Brother of Pedro)
+        Avaliacao::create([
+            'aluno_id' => $aluno4->id,
+            'professor_id' => $prof2->id,
+            'passe' => 9,
+            'chute' => 9,
+            'dominio' => 8,
+            'condicionamento' => 9,
+            'disciplina' => 10,
+            'parecer' => 'Mateus é um líder nato em quadra, excelente visão de jogo.',
+            'date' => Carbon::now()->subDays(10)->toDateString(),
         ]);
     }
 }
