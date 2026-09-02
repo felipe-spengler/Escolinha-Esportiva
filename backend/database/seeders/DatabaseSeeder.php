@@ -143,16 +143,20 @@ class DatabaseSeeder extends Seeder
         }
 
         // 7. Mensalidades
+        $dueDay = 10;
+        $mesPassado = Carbon::now()->subMonth()->setDay($dueDay)->toDateString();
+        $esteMes = Carbon::now()->setDay($dueDay)->toDateString();
+
         // Pedro
-        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => Carbon::now()->subMonth()->startOfMonth()->addDays(9)->toDateString(), 'status' => 'paid', 'paid_at' => Carbon::now()->subMonth()->startOfMonth()->addDays(5)]);
-        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
+        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => $mesPassado, 'status' => 'paid', 'paid_at' => Carbon::now()->subMonth()->setDay(5)]);
+        Mensalidade::create(['aluno_id' => $aluno1->id, 'amount' => 120.00, 'due_date' => $esteMes, 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
         
         // Lucas
-        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => Carbon::now()->subMonth()->startOfMonth()->addDays(9)->toDateString(), 'status' => 'overdue']);
-        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
+        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => $mesPassado, 'status' => 'overdue']);
+        Mensalidade::create(['aluno_id' => $aluno2->id, 'amount' => 120.00, 'due_date' => $esteMes, 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
 
         // Gabriel
-        Mensalidade::create(['aluno_id' => $aluno3->id, 'amount' => 120.00, 'due_date' => Carbon::today()->addDays(5)->toDateString(), 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
+        Mensalidade::create(['aluno_id' => $aluno3->id, 'amount' => 120.00, 'due_date' => $esteMes, 'status' => 'pending', 'pix_code' => '00020101021126580014br.gov.pix.01369528f1fb-26ad-452f-bd1a-96695627ea705204000053039865406120.005802BR5915ESCOLINHA FUT6009TOLEDO62070503***6304E21A']);
 
         // 8. Produtos
         $prodUniforme = Produto::create(['name' => 'Uniforme Oficial Escolinha', 'price' => 85.00, 'stock_quantity' => 20]);
