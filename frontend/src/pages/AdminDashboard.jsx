@@ -16,13 +16,22 @@ function AdminDashboard({ user, logout }) {
   const [produtos, setProdutos] = useState([]);
   const [fluxoCaixa, setFluxoCaixa] = useState([]);
 
-  // Form states
   const [alunoForm, setAlunoForm] = useState({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 });
   const [responsavelForm, setResponsavelForm] = useState({ id: null, name: '', email: '', password: '', phone: '', cpf: '' });
   const [turmaForm, setTurmaForm] = useState({ id: null, name: '', schedule: '', professor_id: '' });
   const [professorForm, setProfessorForm] = useState({ id: null, name: '', email: '', password: '' });
   const [produtoForm, setProdutoForm] = useState({ id: null, name: '', price: '', stock_quantity: '' });
   const [fluxoForm, setFluxoForm] = useState({ type: 'expense', description: '', amount: '', date: new Date().toISOString().split('T')[0] });
+
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState({
+    aluno: false,
+    responsavel: false,
+    turma: false,
+    professor: false,
+    produto: false,
+    fluxo: false
+  });
 
   // Special feature forms
   const [chamadaState, setChamadaState] = useState({ turma_id: '', date: new Date().toISOString().split('T')[0], Alunos: [] });
@@ -151,6 +160,17 @@ function AdminDashboard({ user, logout }) {
       fetchDashboardData();
     } catch (e) {
       alert('Erro ao excluir aluno');
+    }
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAlunoForm(prev => ({ ...prev, photo: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -429,6 +449,218 @@ function AdminDashboard({ user, logout }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       
+      {/* MODAL COMPONENT (Global Wrapper) */}
+      {Object.values(isModalOpen).some(Boolean) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false })} />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false })}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center transition-colors z-10"
+            >
+              ✕
+            </button>
+            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+              {/* PRODUTO FORM MODAL */}
+              {isModalOpen.produto && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">{produtoForm.id ? 'Editar Produto' : 'Adicionar Produto'}</h3>
+                  <form onSubmit={(e) => { handleSaveProduto(e); setIsModalOpen({ ...isModalOpen, produto: false }); }} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome do Produto</label>
+                      <input type="text" value={produtoForm.name} onChange={(e) => setProdutoForm(prev => ({ ...prev, name: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Preço de Venda (R$)</label>
+                      <input type="number" step="0.01" value={produtoForm.price} onChange={(e) => setProdutoForm(prev => ({ ...prev, price: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Quantidade em Estoque</label>
+                      <input type="number" value={produtoForm.stock_quantity} onChange={(e) => setProdutoForm(prev => ({ ...prev, stock_quantity: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase">
+                      Salvar
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* FLUXO CAIXA FORM MODAL */}
+              {isModalOpen.fluxo && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">Lançar Despesa / Receita</h3>
+                  <form onSubmit={(e) => { handleSaveFluxo(e); setIsModalOpen({ ...isModalOpen, fluxo: false }); }} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tipo de Lançamento</label>
+                      <select value={fluxoForm.type} onChange={(e) => setFluxoForm(prev => ({ ...prev, type: e.target.value }))} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm">
+                        <option value="expense">Saída (Despesa)</option>
+                        <option value="income">Entrada (Receita)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Descrição / Motivo</label>
+                      <input type="text" value={fluxoForm.description} onChange={(e) => setFluxoForm(prev => ({ ...prev, description: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Valor (R$)</label>
+                      <input type="number" step="0.01" value={fluxoForm.amount} onChange={(e) => setFluxoForm(prev => ({ ...prev, amount: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Data</label>
+                      <input type="date" value={fluxoForm.date} onChange={(e) => setFluxoForm(prev => ({ ...prev, date: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase">
+                      Lançar no Caixa
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* PROFESSOR FORM MODAL */}
+              {isModalOpen.professor && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">{professorForm.id ? 'Editar Professor' : 'Cadastrar Professor'}</h3>
+                  <form onSubmit={(e) => { handleSaveProfessor(e); setIsModalOpen({ ...isModalOpen, professor: false }); }} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
+                      <input type="text" value={professorForm.name} onChange={(e) => setProfessorForm(prev => ({ ...prev, name: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">E-mail (Login)</label>
+                      <input type="email" value={professorForm.email} onChange={(e) => setProfessorForm(prev => ({ ...prev, email: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Senha {professorForm.id && '(Deixe vazio para manter)'}</label>
+                      <input type="password" value={professorForm.password} onChange={(e) => setProfessorForm(prev => ({ ...prev, password: e.target.value }))} required={!professorForm.id} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase">
+                      {professorForm.id ? 'Salvar Alterações' : 'Cadastrar'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* ALUNO FORM MODAL */}
+              {isModalOpen.aluno && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">{alunoForm.id ? 'Editar Aluno' : 'Cadastrar Aluno'}</h3>
+                  <form onSubmit={handleSaveAluno} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
+                      <input type="text" value={alunoForm.name} onChange={(e) => setAlunoForm(prev => ({ ...prev, name: e.target.value }))} required placeholder="Nome do aluno" className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Data de Nascimento</label>
+                      <input type="date" value={alunoForm.birth_date} onChange={(e) => setAlunoForm(prev => ({ ...prev, birth_date: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Responsável</label>
+                      <select value={alunoForm.responsavel_id} onChange={(e) => setAlunoForm(prev => ({ ...prev, responsavel_id: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm">
+                        <option value="">Selecione...</option>
+                        {responsaveis.map(r => (<option key={r.id} value={r.id}>{r.name} ({r.cpf})</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Turmas</label>
+                      <select multiple value={alunoForm.turma_ids} onChange={(e) => setAlunoForm(prev => ({ ...prev, turma_ids: Array.from(e.target.selectedOptions, option => parseInt(option.value)) }))} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm min-h-24">
+                        {turmas.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                      </select>
+                      <span className="text-[10px] text-slate-500 mt-1 block">Segure Ctrl (ou Cmd) para selecionar mais de uma</span>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Ficha Médica</label>
+                      <textarea rows="2" value={alunoForm.medical_notes} onChange={(e) => setAlunoForm(prev => ({ ...prev, medical_notes: e.target.value }))} placeholder="Alergias, restrições físicas, etc..." className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Foto (Arquivo)</label>
+                      <input type="file" accept="image/*" onChange={handlePhotoUpload} className="w-full bg-slate-950 border border-slate-850 text-slate-300 rounded-xl px-4 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20" />
+                      {alunoForm.photo && alunoForm.photo.startsWith('data:image') && <p className="text-xs text-emerald-500 mt-1">✓ Imagem carregada</p>}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Status</label>
+                      <select value={alunoForm.status} onChange={(e) => setAlunoForm(prev => ({ ...prev, status: e.target.value }))} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm">
+                        <option value="active">Ativo</option>
+                        <option value="inactive">Inativo</option>
+                        <option value="suspended">Suspenso</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Mensalidade (R$)</label>
+                        <input type="number" step="0.01" value={alunoForm.mensalidade_valor} onChange={(e) => setAlunoForm(prev => ({ ...prev, mensalidade_valor: e.target.value }))} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Vencimento</label>
+                        <input type="number" min="1" max="31" value={alunoForm.dia_vencimento} onChange={(e) => setAlunoForm(prev => ({ ...prev, dia_vencimento: e.target.value }))} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                      </div>
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase" onClick={() => setIsModalOpen({ ...isModalOpen, aluno: false })}>
+                      {alunoForm.id ? 'Salvar Alterações' : 'Cadastrar'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* TURMA FORM MODAL */}
+              {isModalOpen.turma && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">{turmaForm.id ? 'Editar Turma' : 'Cadastrar Turma'}</h3>
+                  <form onSubmit={(e) => { handleSaveTurma(e); setIsModalOpen({ ...isModalOpen, turma: false }); }} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome da Turma</label>
+                      <input type="text" value={turmaForm.name} onChange={(e) => setTurmaForm(prev => ({ ...prev, name: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Horário / Dias</label>
+                      <input type="text" value={turmaForm.schedule} onChange={(e) => setTurmaForm(prev => ({ ...prev, schedule: e.target.value }))} required placeholder="Ex: Seg/Qua 14:00" className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Professor</label>
+                      <select value={turmaForm.professor_id} onChange={(e) => setTurmaForm(prev => ({ ...prev, professor_id: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm">
+                        <option value="">Selecione...</option>
+                        {professores.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                      </select>
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase">
+                      {turmaForm.id ? 'Salvar Alterações' : 'Cadastrar'}
+                    </button>
+                  </form>
+                </div>
+              )}
+              {isModalOpen.responsavel && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-6">{responsavelForm.id ? 'Editar Responsável' : 'Cadastrar Responsável'}</h3>
+                  <form onSubmit={(e) => { handleSaveResponsavel(e); setIsModalOpen({ ...isModalOpen, responsavel: false }); }} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
+                      <input type="text" value={responsavelForm.name} onChange={(e) => setResponsavelForm(prev => ({ ...prev, name: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">E-mail</label>
+                      <input type="email" value={responsavelForm.email} onChange={(e) => setResponsavelForm(prev => ({ ...prev, email: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Senha {responsavelForm.id ? '(Deixe em branco para manter)' : ''}</label>
+                      <input type="password" value={responsavelForm.password} onChange={(e) => setResponsavelForm(prev => ({ ...prev, password: e.target.value }))} required={!responsavelForm.id} className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Telefone</label>
+                      <input type="text" value={responsavelForm.phone} onChange={(e) => setResponsavelForm(prev => ({ ...prev, phone: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">CPF</label>
+                      <input type="text" value={responsavelForm.cpf} onChange={(e) => setResponsavelForm(prev => ({ ...prev, cpf: e.target.value }))} required className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm" />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase">
+                      {responsavelForm.id ? 'Salvar Alterações' : 'Cadastrar'}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Top Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center space-x-3">
@@ -733,8 +965,13 @@ function AdminDashboard({ user, logout }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* List */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">Lista de Alunos</h3>
+              <div className="col-span-1 lg:col-span-3 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">Lista de Alunos</h3>
+                  <button onClick={() => { setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 }); setIsModalOpen({ ...isModalOpen, aluno: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Adicionar
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {alunos.map(a => (
                     <div key={a.id} className="flex flex-col sm:flex-row justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-start sm:items-center gap-4">
@@ -752,7 +989,7 @@ function AdminDashboard({ user, logout }) {
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                         <button
-                          onClick={() => handleEditAluno(a)}
+                          onClick={() => { handleEditAluno(a); setIsModalOpen({ ...isModalOpen, aluno: true }); }}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
                         >
                           Editar
@@ -769,150 +1006,20 @@ function AdminDashboard({ user, logout }) {
                 </div>
               </div>
 
-              {/* Form */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">{alunoForm.id ? 'Editar Aluno' : 'Cadastrar Aluno'}</h3>
-                <form onSubmit={handleSaveAluno} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
-                    <input
-                      type="text"
-                      value={alunoForm.name}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                      placeholder="Nome do aluno"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Data de Nascimento</label>
-                    <input
-                      type="date"
-                      value={alunoForm.birth_date}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, birth_date: e.target.value }))}
-                      required
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Responsável</label>
-                    <select
-                      value={alunoForm.responsavel_id}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, responsavel_id: e.target.value }))}
-                      required
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    >
-                      <option value="">Selecione...</option>
-                      {responsaveis.map(r => (
-                        <option key={r.id} value={r.id}>{r.name} ({r.cpf})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Turmas</label>
-                    <select
-                      multiple
-                      value={alunoForm.turma_ids}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, turma_ids: Array.from(e.target.selectedOptions, option => parseInt(option.value)) }))}
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm min-h-24"
-                    >
-                      {turmas.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                    <span className="text-[10px] text-slate-500 mt-1 block">Segure Ctrl (ou Cmd) para selecionar mais de uma</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Ficha Médica</label>
-                    <textarea
-                      rows="2"
-                      value={alunoForm.medical_notes}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, medical_notes: e.target.value }))}
-                      placeholder="Alergias, restrições físicas, etc..."
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Foto (Link URL/Mock)</label>
-                    <input
-                      type="text"
-                      value={alunoForm.photo}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, photo: e.target.value }))}
-                      placeholder="https://exemplo.com/foto.jpg"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Status</label>
-                    <select
-                      value={alunoForm.status}
-                      onChange={(e) => setAlunoForm(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    >
-                      <option value="active">Ativo</option>
-                      <option value="inactive">Inativo</option>
-                      <option value="suspended">Suspenso</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Mensalidade (R$)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={alunoForm.mensalidade_valor}
-                        onChange={(e) => setAlunoForm(prev => ({ ...prev, mensalidade_valor: e.target.value }))}
-                        className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Dia de Vencimento</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="31"
-                        value={alunoForm.dia_vencimento}
-                        onChange={(e) => setAlunoForm(prev => ({ ...prev, dia_vencimento: e.target.value }))}
-                        className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    {alunoForm.id ? 'Salvar Alterações' : 'Cadastrar'}
-                  </button>
-                  {alunoForm.id && (
-                    <button
-                      type="button"
-                      onClick={() => setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 })}
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </form>
-              </div>
-
             </div>
           )}
 
           {/* TAB: PAIS / RESPONSÁVEIS */}
           {activeTab === 'responsaveis' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
+            <div className="grid grid-cols-1 gap-8">
               {/* List */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">Lista de Pais / Responsáveis</h3>
+              <div className="col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">Responsáveis</h3>
+                  <button onClick={() => { setResponsavelForm({ id: null, name: '', email: '', password: '', phone: '', cpf: '' }); setIsModalOpen({ ...isModalOpen, responsavel: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Adicionar
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {responsaveis.map(r => (
                     <div key={r.id} className="flex justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-center gap-4">
@@ -923,7 +1030,7 @@ function AdminDashboard({ user, logout }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditResponsavel(r)}
+                          onClick={() => { handleEditResponsavel(r); setIsModalOpen({ ...isModalOpen, responsavel: true }); }}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
                         >
                           Editar
@@ -939,99 +1046,21 @@ function AdminDashboard({ user, logout }) {
                   ))}
                 </div>
               </div>
-
-              {/* Form */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">{responsavelForm.id ? 'Editar Responsável' : 'Cadastrar Responsável'}</h3>
-                <form onSubmit={handleSaveResponsavel} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
-                    <input
-                      type="text"
-                      value={responsavelForm.name}
-                      onChange={(e) => setResponsavelForm(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                      placeholder="Nome do responsável"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">E-mail</label>
-                    <input
-                      type="email"
-                      value={responsavelForm.email}
-                      onChange={(e) => setResponsavelForm(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                      placeholder="email@exemplo.com"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">CPF</label>
-                    <input
-                      type="text"
-                      value={responsavelForm.cpf}
-                      onChange={(e) => setResponsavelForm(prev => ({ ...prev, cpf: e.target.value }))}
-                      required
-                      placeholder="000.000.000-00"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Telefone</label>
-                    <input
-                      type="text"
-                      value={responsavelForm.phone}
-                      onChange={(e) => setResponsavelForm(prev => ({ ...prev, phone: e.target.value }))}
-                      required
-                      placeholder="(45) 99999-9999"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Senha {responsavelForm.id && '(Deixe vazio para manter)'}</label>
-                    <input
-                      type="password"
-                      value={responsavelForm.password}
-                      onChange={(e) => setResponsavelForm(prev => ({ ...prev, password: e.target.value }))}
-                      required={!responsavelForm.id}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    {responsavelForm.id ? 'Salvar Alterações' : 'Cadastrar'}
-                  </button>
-                  {responsavelForm.id && (
-                    <button
-                      type="button"
-                      onClick={() => setResponsavelForm({ id: null, name: '', email: '', password: '', phone: '', cpf: '' })}
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </form>
-              </div>
-
             </div>
           )}
 
           {/* TAB: TURMAS */}
           {activeTab === 'turmas' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* List */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">Lista de Turmas</h3>
+              <div className="col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">Turmas</h3>
+                  <button onClick={() => { setTurmaForm({ id: null, name: '', schedule: '', professor_id: '' }); setIsModalOpen({ ...isModalOpen, turma: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Adicionar
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {turmas.map(t => (
                     <div key={t.id} className="flex justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-center gap-4">
@@ -1042,7 +1071,7 @@ function AdminDashboard({ user, logout }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditTurma(t)}
+                          onClick={() => { handleEditTurma(t); setIsModalOpen({ ...isModalOpen, turma: true }); }}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
                         >
                           Editar
@@ -1058,78 +1087,21 @@ function AdminDashboard({ user, logout }) {
                   ))}
                 </div>
               </div>
-
-              {/* Form */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">{turmaForm.id ? 'Editar Turma' : 'Cadastrar Turma'}</h3>
-                <form onSubmit={handleSaveTurma} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Identificação (Ex: Sub-15 Sábado)</label>
-                    <input
-                      type="text"
-                      value={turmaForm.name}
-                      onChange={(e) => setTurmaForm(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                      placeholder="Sub-11 Terça/Quinta"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Horário da Aula (Ex: 14:00 - 15:30)</label>
-                    <input
-                      type="text"
-                      value={turmaForm.schedule}
-                      onChange={(e) => setTurmaForm(prev => ({ ...prev, schedule: e.target.value }))}
-                      required
-                      placeholder="14:00 - 15:30"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Professor Responsável</label>
-                    <select
-                      value={turmaForm.professor_id}
-                      onChange={(e) => setTurmaForm(prev => ({ ...prev, professor_id: e.target.value }))}
-                      required
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    >
-                      <option value="">Selecione...</option>
-                      {professores.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    {turmaForm.id ? 'Salvar Alterações' : 'Cadastrar'}
-                  </button>
-                  {turmaForm.id && (
-                    <button
-                      type="button"
-                      onClick={() => setTurmaForm({ id: null, name: '', schedule: '', professor_id: '' })}
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </form>
-              </div>
-
             </div>
           )}
 
           {/* TAB: PROFESSORES */}
           {activeTab === 'professores' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* List */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">Lista de Professores</h3>
+              <div className="col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">Professores</h3>
+                  <button onClick={() => { setProfessorForm({ id: null, name: '', email: '', password: '' }); setIsModalOpen({ ...isModalOpen, professor: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Adicionar
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {professores.map(p => (
                     <div key={p.id} className="flex justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-center gap-4">
@@ -1139,7 +1111,7 @@ function AdminDashboard({ user, logout }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditProfessor(p)}
+                          onClick={() => { handleEditProfessor(p); setIsModalOpen({ ...isModalOpen, professor: true }); }}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
                         >
                           Editar
@@ -1155,65 +1127,6 @@ function AdminDashboard({ user, logout }) {
                   ))}
                 </div>
               </div>
-
-              {/* Form */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">{professorForm.id ? 'Editar Professor' : 'Cadastrar Professor'}</h3>
-                <form onSubmit={handleSaveProfessor} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome Completo</label>
-                    <input
-                      type="text"
-                      value={professorForm.name}
-                      onChange={(e) => setProfessorForm(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                      placeholder="Professor Carlos"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">E-mail</label>
-                    <input
-                      type="email"
-                      value={professorForm.email}
-                      onChange={(e) => setProfessorForm(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                      placeholder="professor@exemplo.com"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Senha {professorForm.id && '(Deixe vazio para manter)'}</label>
-                    <input
-                      type="password"
-                      value={professorForm.password}
-                      onChange={(e) => setProfessorForm(prev => ({ ...prev, password: e.target.value }))}
-                      required={!professorForm.id}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    {professorForm.id ? 'Salvar Alterações' : 'Cadastrar'}
-                  </button>
-                  {professorForm.id && (
-                    <button
-                      type="button"
-                      onClick={() => setProfessorForm({ id: null, name: '', email: '', password: '' })}
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </form>
-              </div>
-
             </div>
           )}
 
@@ -1336,11 +1249,16 @@ function AdminDashboard({ user, logout }) {
 
           {/* TAB: LOJA / PDV */}
           {activeTab === 'loja' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* Product Store */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">PDV - Venda de Uniformes / Acessórios</h3>
+              <div className="col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">PDV - Venda de Uniformes / Acessórios</h3>
+                  <button onClick={() => { setProdutoForm({ id: null, name: '', price: '', stock_quantity: '' }); setIsModalOpen({ ...isModalOpen, produto: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Adicionar Produto
+                  </button>
+                </div>
                 
                 <form onSubmit={handleVendaProduto} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-end">
                   <div>
@@ -1387,7 +1305,7 @@ function AdminDashboard({ user, logout }) {
                         <div className="text-slate-500 text-xs mt-0.5">Preço: R$ {parseFloat(p.price).toFixed(2)} | Estoque: {p.stock_quantity} unidades</div>
                       </div>
                       <button
-                        onClick={() => setProdutoForm({ id: p.id, name: p.name, price: p.price, stock_quantity: p.stock_quantity })}
+                        onClick={() => { setProdutoForm({ id: p.id, name: p.name, price: p.price, stock_quantity: p.stock_quantity }); setIsModalOpen({ ...isModalOpen, produto: true }); }}
                         className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
                       >
                         Editar
@@ -1397,75 +1315,23 @@ function AdminDashboard({ user, logout }) {
                 </div>
               </div>
 
-              {/* Add/Edit Product */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">{produtoForm.id ? 'Editar Produto' : 'Adicionar Produto'}</h3>
-                <form onSubmit={handleSaveProduto} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome do Produto</label>
-                    <input
-                      type="text"
-                      value={produtoForm.name}
-                      onChange={(e) => setProdutoForm(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                      placeholder="Uniforme Oficial Sub-11"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Preço de Venda (R$)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={produtoForm.price}
-                      onChange={(e) => setProdutoForm(prev => ({ ...prev, price: e.target.value }))}
-                      required
-                      placeholder="85.00"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Quantidade em Estoque</label>
-                    <input
-                      type="number"
-                      value={produtoForm.stock_quantity}
-                      onChange={(e) => setProdutoForm(prev => ({ ...prev, stock_quantity: e.target.value }))}
-                      required
-                      placeholder="30"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    Salvar
-                  </button>
-                  {produtoForm.id && (
-                    <button
-                      type="button"
-                      onClick={() => setProdutoForm({ id: null, name: '', price: '', stock_quantity: '' })}
-                      className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </form>
-              </div>
+              {/* Form moved to Modal */}
 
             </div>
           )}
 
           {/* TAB: FLUXO DE CAIXA */}
           {activeTab === 'fluxo' && isAdmin && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
               
               {/* Ledger */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                <h3 className="text-lg font-black text-white mb-6">Livro de Fluxo de Caixa</h3>
+              <div className="col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-black text-white">Livro de Fluxo de Caixa</h3>
+                  <button onClick={() => { setFluxoForm({ type: 'expense', description: '', amount: '', date: new Date().toISOString().split('T')[0] }); setIsModalOpen({ ...isModalOpen, fluxo: true }); }} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs uppercase">
+                    + Lançar Caixa
+                  </button>
+                </div>
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                   {fluxoCaixa.map(f => (
                     <div key={f.id} className="flex justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 items-center gap-4">
@@ -1486,66 +1352,7 @@ function AdminDashboard({ user, logout }) {
                 </div>
               </div>
 
-              {/* Manual Entry */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-fit">
-                <h3 className="text-lg font-black text-white mb-6">Lançar Despesa / Receita</h3>
-                <form onSubmit={handleSaveFluxo} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tipo de Lançamento</label>
-                    <select
-                      value={fluxoForm.type}
-                      onChange={(e) => setFluxoForm(prev => ({ ...prev, type: e.target.value }))}
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    >
-                      <option value="expense">Saída (Despesa)</option>
-                      <option value="income">Entrada (Receita)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Descrição / Motivo</label>
-                    <input
-                      type="text"
-                      value={fluxoForm.description}
-                      onChange={(e) => setFluxoForm(prev => ({ ...prev, description: e.target.value }))}
-                      required
-                      placeholder="Pagamento energia da quadra"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Valor (R$)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={fluxoForm.amount}
-                      onChange={(e) => setFluxoForm(prev => ({ ...prev, amount: e.target.value }))}
-                      required
-                      placeholder="150.00"
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Data</label>
-                    <input
-                      type="date"
-                      value={fluxoForm.date}
-                      onChange={(e) => setFluxoForm(prev => ({ ...prev, date: e.target.value }))}
-                      required
-                      className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
-                  >
-                    Lançar no Caixa
-                  </button>
-                </form>
-              </div>
+              {/* Form moved to Modal */}
 
             </div>
           )}
