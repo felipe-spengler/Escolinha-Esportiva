@@ -69,8 +69,8 @@ function ParentPortal({ logout }) {
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-2xl">⚽</span>
-          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Portal dos Pais</h1>
+          <span className="text-2xl hidden sm:inline-block">⚽</span>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Portal dos Pais</h1>
         </div>
         <div className="flex items-center space-x-4">
           {filhos.length > 1 && (
@@ -143,7 +143,7 @@ function ParentPortal({ logout }) {
           )}
 
           {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-800 gap-1 bg-slate-900/40 p-1.5 rounded-2xl self-start border">
+          <div className="flex overflow-x-auto w-full sm:w-auto border-b border-slate-800 gap-1 bg-slate-900/40 p-1.5 rounded-2xl self-start border">
             <button
               onClick={() => setActiveTab('geral')}
               className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${

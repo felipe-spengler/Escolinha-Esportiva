@@ -4,6 +4,7 @@ import api from '../api';
 
 function AdminDashboard({ user, logout }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -406,10 +407,16 @@ function AdminDashboard({ user, logout }) {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       
       {/* Top Header */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+      <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center space-x-3">
-          <span className="text-2xl">⚽</span>
-          <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+          <button 
+            className="lg:hidden text-slate-300 hover:text-white"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <span className="text-2xl hidden sm:inline-block">⚽</span>
+          <h1 className="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
             ARENA - GESTÃO ESPORTIVA
           </h1>
         </div>
@@ -427,10 +434,18 @@ function AdminDashboard({ user, logout }) {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row relative">
         
+        {/* Mobile Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+        )}
+
         {/* Sidebar Nav */}
-        <aside className="w-full lg:w-64 bg-slate-900/60 lg:border-r border-slate-800 p-4 space-y-1.5">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 p-4 space-y-1.5 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 overflow-y-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           {[
             { id: 'overview', label: '📊 Dashboard', roles: ['admin', 'professor'] },
             { id: 'chamada', label: '📝 Diário de Classe', roles: ['admin', 'professor'] },
@@ -445,7 +460,7 @@ function AdminDashboard({ user, logout }) {
           ].filter(tab => tab.roles.includes(user.role)).map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setIsMobileMenuOpen(false); }}
               className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center ${
                 activeTab === tab.id
                   ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/10 font-bold'
