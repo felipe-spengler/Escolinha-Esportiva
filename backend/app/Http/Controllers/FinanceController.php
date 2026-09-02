@@ -106,8 +106,9 @@ class FinanceController extends Controller
                     if (isset($payment['id'])) {
                         $mensalidade->update([
                             'asaas_payment_id' => $payment['id'],
-                            'payment_url' => $payment['invoiceUrl'] ?? null, // invoiceUrl contains the boleto/pix checkout
+                            'payment_url' => $payment['invoiceUrl'] ?? null,
                             'invoice_url' => $payment['bankSlipUrl'] ?? null,
+                            'pix_code' => $payment['pix_payload'] ?? null,
                         ]);
                     }
 

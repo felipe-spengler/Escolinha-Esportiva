@@ -93,7 +93,7 @@ class AsaasService
 
         $payload = [
             'customer' => $customerId,
-            'billingType' => 'UNDEFINED', // Aceita Pix, Boleto e Cartão
+            'billingType' => 'PIX',
             'value' => $amount,
             'dueDate' => $dueDate,
             'description' => $description,
@@ -101,6 +101,17 @@ class AsaasService
             'postalService' => false
         ];
 
-        return $this->request('/payments', 'POST', $payload);
+        $payment = $this->request('/payments', 'POST', $payload);
+
+        if (isset($payment['id']) && $payment['billingType'] === 'PIX') {
+            try {
+                $pixData = $this->request("/payments/{$payment['id']}/pixQrCode");
+                $payment['pix_payload'] = $pixData['payload'] ?? null;
+            } catch (\Exception $e) {
+                Log::error("Failed to fetch PIX QR Code for payment {$payment['id']}: " . $e->getMessage());
+            }
+        }
+
+        return $payment;
     }
 }
