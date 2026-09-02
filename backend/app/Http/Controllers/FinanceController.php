@@ -19,7 +19,14 @@ class FinanceController extends Controller
     // ==========================================
     public function listMensalidades(Request $request)
     {
-        $query = Mensalidade::with('aluno.responsavel');
+        // Pegar apenas a mensalidade mais recente de cada aluno (status atual real)
+        $latestIds = DB::table('mensalidades')
+            ->select(DB::raw('MAX(id) as id'))
+            ->groupBy('aluno_id')
+            ->pluck('id');
+
+        $query = Mensalidade::with('aluno.responsavel')
+            ->whereIn('id', $latestIds);
 
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->status);
