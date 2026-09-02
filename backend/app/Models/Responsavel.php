@@ -18,6 +18,7 @@ class Responsavel extends Authenticatable
         'phone',
         'cpf',
         'asaas_customer_id',
+        'api_token',
     ];
 
     protected $hidden = [
