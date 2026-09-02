@@ -17,9 +17,15 @@ test.describe('Dashboard e Visualização de Dados', () => {
     await expect(page.getByText('Fluxo Financeiro (Histórico)')).toBeVisible();
   });
 
-  test('deve conseguir navegar pelas abas laterais (Alunos, Turmas)', async ({ page }) => {
+  test('deve conseguir navegar pelas abas laterais (Alunos, Turmas)', async ({ page, isMobile }) => {
+    if (isMobile) {
+      await page.locator('button.lg\\:hidden').click();
+    }
     await page.getByRole('button', { name: '🏫 Turmas' }).click();
     
+    if (isMobile) {
+      await page.locator('button.lg\\:hidden').click();
+    }
     await page.getByRole('button', { name: '🏃 Gerenciar Alunos' }).click();
   });
 });
