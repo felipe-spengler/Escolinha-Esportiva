@@ -45,6 +45,13 @@ class DashboardController extends Controller
         $despesasMes = FluxoCaixa::where('type', 'expense')
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->sum('amount');
+            
+        $saldoMes = floatval($receitasMes) - floatval($despesasMes);
+
+        // 5. Mensalidades a receber no mês
+        $mensalidadesPendentesValor = Mensalidade::where('status', 'pending')
+            ->whereBetween('due_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
 
         // Financial history (last 6 months) for charts
         $fluxoHistorico = [];
@@ -73,6 +80,8 @@ class DashboardController extends Controller
             'aniversariantes_mes' => $aniversariantesMes,
             'receitas_mes' => floatval($receitasMes),
             'despesas_mes' => floatval($despesasMes),
+            'saldo_mes' => $saldoMes,
+            'mensalidades_pendentes_valor' => floatval($mensalidadesPendentesValor),
             'fluxo_historico' => $fluxoHistorico,
         ]);
     }

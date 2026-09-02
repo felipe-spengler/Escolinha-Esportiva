@@ -858,24 +858,43 @@ function AdminDashboard({ user, logout }) {
           {activeTab === 'overview' && dashboardData && (
             <div className="space-y-8">
               {/* Metrics cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
-                  <div className="absolute right-0 bottom-0 text-slate-800/20 text-7xl font-bold select-none pr-4 pb-2">RUN</div>
-                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Alunos Ativos</span>
-                  <div className="text-4xl font-black text-emerald-400 mt-2">{dashboardData.total_alunos_ativos}</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alunos Ativos</span>
+                  <div className="text-3xl font-black text-emerald-400">{dashboardData.total_alunos_ativos}</div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">RUN</div>
                 </div>
                 
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
-                  <div className="absolute right-0 bottom-0 text-slate-800/20 text-7xl font-bold select-none pr-4 pb-2">DEB</div>
-                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Inadimplentes no Mês</span>
-                  <div className="text-4xl font-black text-red-400 mt-2">{dashboardData.inadimplencia_mes}</div>
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alunos Inadimplentes</span>
+                  <div className="text-3xl font-black text-red-400">{dashboardData.inadimplencia_mes}</div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">DEB</div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
-                  <div className="absolute right-0 bottom-0 text-slate-800/20 text-7xl font-bold select-none pr-4 pb-2">CAI</div>
-                  <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Finanças do Mês</span>
-                  <div className="text-lg font-black text-emerald-400 mt-2">Rec: R$ {dashboardData.receitas_mes.toFixed(2)}</div>
-                  <div className="text-lg font-black text-red-400">Desp: R$ {dashboardData.despesas_mes.toFixed(2)}</div>
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">A Receber no Mês</span>
+                  <div className="text-2xl font-black text-amber-400">R$ {dashboardData.mensalidades_pendentes_valor?.toFixed(2) || '0.00'}</div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">PEN</div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Receitas do Mês</span>
+                  <div className="text-2xl font-black text-emerald-400">R$ {dashboardData.receitas_mes.toFixed(2)}</div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">REC</div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Despesas do Mês</span>
+                  <div className="text-2xl font-black text-red-400">R$ {dashboardData.despesas_mes.toFixed(2)}</div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">DES</div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between h-32">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Saldo do Mês</span>
+                  <div className={`text-2xl font-black ${dashboardData.saldo_mes >= 0 ? 'text-blue-400' : 'text-orange-500'}`}>
+                    R$ {dashboardData.saldo_mes?.toFixed(2) || '0.00'}
+                  </div>
+                  <div className="absolute -right-2 -bottom-4 text-slate-800/30 text-6xl font-black select-none">SAL</div>
                 </div>
               </div>
 
@@ -907,35 +926,21 @@ function AdminDashboard({ user, logout }) {
                 </div>
 
                 {/* Birthdates */}
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-white mb-4">🎈 Aniversariantes do Mês</h3>
-                    <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                      {dashboardData.aniversariantes_mes.map(a => {
-                        const date = new Date(a.birth_date);
-                        return (
-                          <div key={a.id} className="flex justify-between items-center bg-slate-950/40 px-4 py-3 rounded-2xl border border-slate-800/80">
-                            <span className="font-bold text-white text-sm">{a.name}</span>
-                            <span className="text-xs text-slate-400 font-semibold">{date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</span>
-                          </div>
-                        );
-                      })}
-                      {dashboardData.aniversariantes_mes.length === 0 && (
-                        <div className="text-slate-500 text-sm py-12 text-center italic">Nenhum aniversariante neste mês.</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mt-4 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-bold text-white">Aniversariantes do Dia:</h4>
-                      <p className="text-slate-400 text-xs mt-1">
-                        {dashboardData.aniversariantes_dia.length > 0
-                          ? dashboardData.aniversariantes_dia.map(x => x.name).join(', ')
-                          : 'Nenhum hoje.'
-                        }
-                      </p>
-                    </div>
-                    <span className="text-2xl">🍰</span>
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col h-full">
+                  <h3 className="text-lg font-black text-white mb-4">🎈 Aniversariantes do Mês</h3>
+                  <div className="space-y-2.5 overflow-y-auto pr-1 flex-1">
+                    {dashboardData.aniversariantes_mes.map(a => {
+                      const date = new Date(a.birth_date);
+                      return (
+                        <div key={a.id} className="flex justify-between items-center bg-slate-950/40 px-4 py-3 rounded-2xl border border-slate-800/80">
+                          <span className="font-bold text-white text-sm">{a.name}</span>
+                          <span className="text-xs text-slate-400 font-semibold">{date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</span>
+                        </div>
+                      );
+                    })}
+                    {dashboardData.aniversariantes_mes.length === 0 && (
+                      <div className="text-slate-500 text-sm py-12 text-center italic">Nenhum aniversariante neste mês.</div>
+                    )}
                   </div>
                 </div>
               </div>
