@@ -7,7 +7,9 @@ use App\Models\Mensalidade;
 use App\Models\Aluno;
 use App\Models\Produto;
 use App\Models\VendaProduto;
+use App\Models\VendaProduto;
 use App\Models\FluxoCaixa;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -122,6 +124,35 @@ class FinanceController extends Controller
         return response()->json([
             'message' => "Mensalidades geradas com sucesso! total: {$criadas}",
         ]);
+    }
+
+    // ==========================================
+    // CONFIGURAÇÕES GERAIS (Settings)
+    // ==========================================
+    public function getSettings()
+    {
+        $setting = Setting::first();
+        if (!$setting) {
+            $setting = Setting::create(['juros_mensal' => 1.00, 'multa_atraso' => 2.00]);
+        }
+        return response()->json($setting);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $data = $request->validate([
+            'juros_mensal' => 'required|numeric|min:0|max:100',
+            'multa_atraso' => 'required|numeric|min:0|max:100',
+        ]);
+
+        $setting = Setting::first();
+        if (!$setting) {
+            $setting = Setting::create($data);
+        } else {
+            $setting->update($data);
+        }
+
+        return response()->json($setting);
     }
 
     // ==========================================

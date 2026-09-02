@@ -30,6 +30,8 @@ class SystemController extends Controller
             'medical_notes' => 'nullable|string',
             'photo' => 'nullable|string', // Base64 or standard file
             'turma_ids' => 'nullable|array',
+            'mensalidade_valor' => 'nullable|numeric|min:0',
+            'dia_vencimento' => 'nullable|integer|min:1|max:31',
         ]);
 
         $photoPath = null;
@@ -57,6 +59,8 @@ class SystemController extends Controller
             'status' => $data['status'],
             'medical_notes' => $data['medical_notes'] ?? null,
             'photo_path' => $photoPath,
+            'mensalidade_valor' => $data['mensalidade_valor'] ?? 120.00,
+            'dia_vencimento' => $data['dia_vencimento'] ?? 10,
         ]);
 
         if (!empty($data['turma_ids'])) {
@@ -76,6 +80,8 @@ class SystemController extends Controller
             'medical_notes' => 'nullable|string',
             'photo' => 'nullable|string',
             'turma_ids' => 'nullable|array',
+            'mensalidade_valor' => 'nullable|numeric|min:0',
+            'dia_vencimento' => 'nullable|integer|min:1|max:31',
         ]);
 
         $photoPath = $aluno->photo_path;
@@ -100,6 +106,8 @@ class SystemController extends Controller
             'status' => $data['status'],
             'medical_notes' => $data['medical_notes'] ?? null,
             'photo_path' => $photoPath,
+            'mensalidade_valor' => $data['mensalidade_valor'] ?? 120.00,
+            'dia_vencimento' => $data['dia_vencimento'] ?? 10,
         ]);
 
         $aluno->turmas()->sync($data['turma_ids'] ?? []);

@@ -13,6 +13,8 @@ class Aluno extends Model
         'status',
         'medical_notes',
         'photo_path',
+        'mensalidade_valor',
+        'dia_vencimento'
     ];
 
     public function responsavel()

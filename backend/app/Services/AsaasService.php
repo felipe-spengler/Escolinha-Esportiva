@@ -83,7 +83,7 @@ class AsaasService
         return $customer['id'];
     }
 
-    public function createPayment($responsavel, $amount, string $description, string $externalReference, ?string $dueDate = null): array
+    public function createPayment($responsavel, $amount, string $description, string $externalReference, ?string $dueDate = null, float $interest = 1.00, float $fine = 2.00): array
     {
         $customerId = $this->getOrCreateCustomer($responsavel);
 
@@ -98,7 +98,15 @@ class AsaasService
             'dueDate' => $dueDate,
             'description' => $description,
             'externalReference' => $externalReference,
-            'postalService' => false
+            'postalService' => false,
+            'fine' => [
+                'value' => $fine,
+                'type' => 'PERCENTAGE'
+            ],
+            'interest' => [
+                'value' => $interest,
+                'type' => 'PERCENTAGE'
+            ]
         ];
 
         $payment = $this->request('/payments', 'POST', $payload);

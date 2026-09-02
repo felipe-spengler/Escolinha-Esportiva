@@ -62,6 +62,10 @@ Route::middleware('api.auth')->group(function () {
     Route::patch('/mensalidades/{mensalidade}/pix', [FinanceController::class, 'updatePix']);
     Route::post('/mensalidades/{mensalidade}/baixa', [FinanceController::class, 'darBaixaManual']);
 
+    // Settings
+    Route::get('/settings', [FinanceController::class, 'getSettings']);
+    Route::post('/settings', [FinanceController::class, 'updateSettings']);
+
     // Loja (PDV)
     Route::get('/produtos', [FinanceController::class, 'listProdutos']);
     Route::post('/produtos', [FinanceController::class, 'storeProduto']);

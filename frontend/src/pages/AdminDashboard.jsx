@@ -17,7 +17,7 @@ function AdminDashboard({ user, logout }) {
   const [fluxoCaixa, setFluxoCaixa] = useState([]);
 
   // Form states
-  const [alunoForm, setAlunoForm] = useState({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [] });
+  const [alunoForm, setAlunoForm] = useState({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 });
   const [responsavelForm, setResponsavelForm] = useState({ id: null, name: '', email: '', password: '', phone: '', cpf: '' });
   const [turmaForm, setTurmaForm] = useState({ id: null, name: '', schedule: '', professor_id: '' });
   const [professorForm, setProfessorForm] = useState({ id: null, name: '', email: '', password: '' });
@@ -27,7 +27,7 @@ function AdminDashboard({ user, logout }) {
   // Special feature forms
   const [chamadaState, setChamadaState] = useState({ turma_id: '', date: new Date().toISOString().split('T')[0], Alunos: [] });
   const [avaliacaoForm, setAvaliacaoForm] = useState({ aluno_id: '', passe: 5, chute: 5, dominio: 5, condicionamento: 5, disciplina: 5, parecer: '', date: new Date().toISOString().split('T')[0] });
-  const [mensalidadeGerarForm, setMensalidadeGerarForm] = useState({ amount: '120.00', due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 10).toISOString().split('T')[0] });
+  const [settingsForm, setSettingsForm] = useState({ juros_mensal: '1.00', multa_atraso: '2.00' });
   const [mensalidadesList, setMensalidadesList] = useState([]);
   const [mensalidadeFilter, setMensalidadeFilter] = useState('');
   const [pixInput, setPixInput] = useState({ id: null, pix_code: '' });
@@ -58,7 +58,7 @@ function AdminDashboard({ user, logout }) {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [alunosRes, respRes, turmasRes, profsRes, prodsRes, fluxoRes, mensRes] = await Promise.all([
+      const [alunosRes, respRes, turmasRes, profsRes, prodsRes, fluxoRes, mensRes, settingsRes] = await Promise.all([
         api.get('/alunos'),
         api.get('/responsaveis'),
         api.get('/turmas'),
@@ -66,6 +66,7 @@ function AdminDashboard({ user, logout }) {
         api.get('/produtos'),
         api.get('/fluxo-caixa'),
         api.get('/mensalidades'),
+        api.get('/settings'),
       ]);
       setAlunos(alunosRes.data);
       setResponsaveis(respRes.data);
@@ -74,10 +75,16 @@ function AdminDashboard({ user, logout }) {
       setProdutos(prodsRes.data);
       setFluxoCaixa(fluxoRes.data);
       setMensalidadesList(mensRes.data);
+      if (settingsRes && settingsRes.data) {
+         setSettingsForm({
+            juros_mensal: settingsRes.data.juros_mensal || '1.00',
+            multa_atraso: settingsRes.data.multa_atraso || '2.00'
+         });
+      }
 
       if (turmasRes.data.length > 0) {
         setChamadaState(prev => ({ ...prev, turma_id: turmasRes.data[0].id }));
-        fetchChamadaAlunos(turmasRes.data[0].id, prev => prev.date);
+        fetchChamadaAlunos(turmasRes.data[0].id);
       }
     } catch (e) {
       console.error(e);
@@ -113,7 +120,7 @@ function AdminDashboard({ user, logout }) {
       } else {
         await api.post('/alunos', alunoForm);
       }
-      setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [] });
+      setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 });
       fetchAllData();
       fetchDashboardData();
     } catch (err) {
@@ -130,7 +137,9 @@ function AdminDashboard({ user, logout }) {
       status: a.status,
       medical_notes: a.medical_notes || '',
       photo: a.photo_path || '',
-      turma_ids: a.turmas.map(t => t.id)
+      turma_ids: a.turmas.map(t => t.id),
+      mensalidade_valor: a.mensalidade_valor || 120,
+      dia_vencimento: a.dia_vencimento || 10
     });
   };
 
@@ -180,7 +189,21 @@ function AdminDashboard({ user, logout }) {
       await api.delete(`/responsaveis/${id}`);
       fetchAllData();
     } catch (e) {
-      alert('Erro ao excluir responsável');
+      alert(err.response?.data?.message || 'Erro ao excluir responsável');
+    }
+  };
+
+  // ==========================================
+  // SETTINGS HANDLER
+  // ==========================================
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/settings', settingsForm);
+      alert('Configurações salvas com sucesso!');
+      fetchAllData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erro ao salvar configurações');
     }
   };
 
@@ -838,6 +861,30 @@ function AdminDashboard({ user, logout }) {
                     </select>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Mensalidade (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={alunoForm.mensalidade_valor}
+                        onChange={(e) => setAlunoForm(prev => ({ ...prev, mensalidade_valor: e.target.value }))}
+                        className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Dia de Vencimento</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={alunoForm.dia_vencimento}
+                        onChange={(e) => setAlunoForm(prev => ({ ...prev, dia_vencimento: e.target.value }))}
+                        className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
@@ -847,7 +894,7 @@ function AdminDashboard({ user, logout }) {
                   {alunoForm.id && (
                     <button
                       type="button"
-                      onClick={() => setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [] })}
+                      onClick={() => setAlunoForm({ id: null, name: '', responsavel_id: '', birth_date: '', status: 'active', medical_notes: '', photo: '', turma_ids: [], mensalidade_valor: 120, dia_vencimento: 10 })}
                       className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 rounded-xl transition-all text-xs"
                     >
                       Cancelar
@@ -1245,30 +1292,32 @@ function AdminDashboard({ user, logout }) {
                 </div>
               </div>
 
-              {/* Monthly billing Generator */}
+              {/* Settings / Fees Generator */}
               <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-fit">
-                <h3 className="text-lg font-black text-white mb-6">Gerar Mensalidades do Mês</h3>
-                <form onSubmit={handleGerarMensalidades} className="space-y-4">
+                <h3 className="text-lg font-black text-white mb-6">Configurações de Taxas</h3>
+                <form onSubmit={handleSaveSettings} className="space-y-4">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Valor Padrão (R$)</label>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Juros Mensal (%)</label>
                     <input
                       type="number"
                       step="0.01"
-                      value={mensalidadeGerarForm.amount}
-                      onChange={(e) => setMensalidadeGerarForm(prev => ({ ...prev, amount: e.target.value }))}
+                      value={settingsForm.juros_mensal}
+                      onChange={(e) => setSettingsForm(prev => ({ ...prev, juros_mensal: e.target.value }))}
                       required
-                      placeholder="120.00"
+                      placeholder="1.00"
                       className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Data de Vencimento</label>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Multa por Atraso (%)</label>
                     <input
-                      type="date"
-                      value={mensalidadeGerarForm.due_date}
-                      onChange={(e) => setMensalidadeGerarForm(prev => ({ ...prev, due_date: e.target.value }))}
+                      type="number"
+                      step="0.01"
+                      value={settingsForm.multa_atraso}
+                      onChange={(e) => setSettingsForm(prev => ({ ...prev, multa_atraso: e.target.value }))}
                       required
+                      placeholder="2.00"
                       className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
                     />
                   </div>
@@ -1277,7 +1326,7 @@ function AdminDashboard({ user, logout }) {
                     type="submit"
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"
                   >
-                    Gerar em Lote (Alunos Ativos)
+                    Salvar Configurações
                   </button>
                 </form>
               </div>
