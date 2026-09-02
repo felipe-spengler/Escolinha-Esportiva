@@ -7,6 +7,7 @@ use App\Http\Controllers\SystemController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\CampeonatoController;
 
 // --- PUBLIC ROUTE ---
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -83,4 +84,26 @@ Route::middleware('api.auth')->group(function () {
     // Portal dos Pais
     Route::get('/portal/filhos', [PortalController::class, 'listFilhos']);
     Route::get('/portal/filhos/{aluno}', [PortalController::class, 'getFilhoDetalhes']);
+
+    // Campeonatos
+    Route::get('/campeonatos', [CampeonatoController::class, 'index']);
+    Route::post('/campeonatos', [CampeonatoController::class, 'store']);
+    Route::put('/campeonatos/{campeonato}', [CampeonatoController::class, 'update']);
+    Route::delete('/campeonatos/{campeonato}', [CampeonatoController::class, 'destroy']);
+    
+    // Equipes e Jogadores
+    Route::get('/campeonatos/{campeonato}/equipes', [CampeonatoController::class, 'getEquipes']);
+    Route::post('/campeonatos/{campeonato}/equipes', [CampeonatoController::class, 'storeEquipe']);
+    Route::delete('/equipes/{equipe}', [CampeonatoController::class, 'destroyEquipe']);
+    Route::post('/equipes/{equipe}/jogadores', [CampeonatoController::class, 'storeJogador']);
+    Route::delete('/jogadores/{jogador}', [CampeonatoController::class, 'destroyJogador']);
+    
+    // Jogos e Súmula
+    Route::post('/campeonatos/{campeonato}/jogos', [CampeonatoController::class, 'storeJogo']);
+    Route::put('/jogos/{jogo}', [CampeonatoController::class, 'updateJogo']);
+    Route::put('/jogos/{jogo}/finalizar', [CampeonatoController::class, 'finalizarJogo']);
+    
+    Route::get('/jogos/{jogo}/eventos', [CampeonatoController::class, 'getEventos']);
+    Route::post('/jogos/{jogo}/eventos', [CampeonatoController::class, 'storeEvento']);
+    Route::delete('/eventos/{evento}', [CampeonatoController::class, 'destroyEvento']);
 });

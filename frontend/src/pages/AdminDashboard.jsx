@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import CampeonatosTab from './CampeonatosTab';
 
 function AdminDashboard({ user, logout }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -833,6 +834,7 @@ function AdminDashboard({ user, logout }) {
             { id: 'responsaveis', label: '👥 Pais / Responsáveis', roles: ['admin'] },
             { id: 'turmas', label: '🏫 Turmas', roles: ['admin'] },
             { id: 'professores', label: '👔 Professores', roles: ['admin'] },
+            { id: 'campeonatos', label: '🏆 Campeonatos', roles: ['admin', 'professor'] },
             { id: 'financeiro', label: '💰 Mensalidades', roles: ['admin'] },
             { id: 'loja', label: '🛒 Loja / PDV', roles: ['admin'] },
             { id: 'fluxo', label: '📉 Fluxo de Caixa', roles: ['admin'] },
@@ -1461,6 +1463,11 @@ function AdminDashboard({ user, logout }) {
               {/* Form moved to Modal */}
 
             </div>
+          )}
+
+          {/* TAB: CAMPEONATOS */}
+          {activeTab === 'campeonatos' && (
+            <CampeonatosTab alunos={alunos} isAdmin={isAdmin} />
           )}
 
           {/* TAB: FLUXO DE CAIXA */}
