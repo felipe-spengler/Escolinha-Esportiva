@@ -7,7 +7,6 @@ use App\Models\Mensalidade;
 use App\Models\Aluno;
 use App\Models\Produto;
 use App\Models\VendaProduto;
-use App\Models\VendaProduto;
 use App\Models\FluxoCaixa;
 use App\Models\Setting;
 use Carbon\Carbon;
