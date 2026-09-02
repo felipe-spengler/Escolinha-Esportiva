@@ -45,3 +45,8 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev \
 
 # Copiar os arquivos gerados no Stage 1 (frontend) para a pasta public do Laravel
 COPY --from=frontend-builder /app/dist /var/www/html/public/
+
+# Configurar o entrypoint para rodar migrations automaticamente
+RUN chmod +x /var/www/html/docker-entrypoint.sh
+ENTRYPOINT ["/var/www/html/docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
