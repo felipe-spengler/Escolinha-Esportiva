@@ -9,6 +9,8 @@ use App\Models\Aluno;
 use App\Models\Responsavel;
 use App\Models\Turma;
 use App\Models\User;
+use App\Models\Mensalidade;
+use App\Models\FluxoCaixa;
 
 class SystemController extends Controller
 {
@@ -119,6 +121,39 @@ class SystemController extends Controller
     {
         $aluno->delete();
         return response()->json(['message' => 'Aluno deletado com sucesso']);
+    }
+
+    public function mensalidadesHistory(Aluno $aluno)
+    {
+        $mensalidades = Mensalidade::where('aluno_id', $aluno->id)
+            ->orderBy('due_date', 'desc')
+            ->get();
+
+        // Enriquecer com a forma de pagamento se estiver paga
+        $mensalidades = $mensalidades->map(function ($m) {
+            $paymentMethod = null;
+            if ($m->status === 'paid') {
+                $fluxo = FluxoCaixa::where('origin_type', 'mensalidade')
+                    ->where('origin_id', $m->id)
+                    ->first();
+                
+                if ($fluxo) {
+                    if (str_contains($fluxo->description, 'Asaas')) {
+                        $paymentMethod = 'Asaas (Pix/Boleto)';
+                    } else {
+                        $paymentMethod = 'Baixa Manual';
+                    }
+                } else {
+                    // Fallback
+                    $paymentMethod = 'Manual / Desconhecido';
+                }
+            }
+            
+            $m->payment_method = $paymentMethod;
+            return $m;
+        });
+
+        return response()->json($mensalidades);
     }
 
     // ==========================================

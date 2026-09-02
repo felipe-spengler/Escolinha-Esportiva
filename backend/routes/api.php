@@ -24,6 +24,7 @@ Route::middleware('api.auth')->group(function () {
     // Dashboard data
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
+    Route::get('/alunos/{aluno}/mensalidades', [SystemController::class, 'mensalidadesHistory']);
     // Alunos
     Route::get('/alunos', [SystemController::class, 'listAlunos']);
     Route::post('/alunos', [SystemController::class, 'storeAluno']);

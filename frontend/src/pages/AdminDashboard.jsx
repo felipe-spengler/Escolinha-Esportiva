@@ -31,8 +31,12 @@ function AdminDashboard({ user, logout }) {
     professor: false,
     produto: false,
     fluxo: false,
-    avaliacao: false
+    avaliacao: false,
+    historicoPagamento: false
   });
+
+  const [historicoAluno, setHistoricoAluno] = useState(null);
+  const [historicoData, setHistoricoData] = useState([]);
 
   // Special feature forms
   const [chamadaState, setChamadaState] = useState({ turma_id: '', date: new Date().toISOString().split('T')[0], Alunos: [] });
@@ -104,6 +108,17 @@ function AdminDashboard({ user, logout }) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenHistorico = async (aluno) => {
+    try {
+      const res = await api.get(`/alunos/${aluno.id}/mensalidades`);
+      setHistoricoData(res.data);
+      setHistoricoAluno(aluno);
+      setIsModalOpen({ ...isModalOpen, historicoPagamento: true });
+    } catch (e) {
+      alert('Erro ao carregar histórico');
     }
   };
 
@@ -446,15 +461,52 @@ function AdminDashboard({ user, logout }) {
       {/* MODAL COMPONENT (Global Wrapper) */}
       {Object.values(isModalOpen).some(Boolean) && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false })} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false, avaliacao: false, historicoPagamento: false })} />
           <div className="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
             <button 
-              onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false })}
+              onClick={() => setIsModalOpen({ aluno: false, responsavel: false, turma: false, professor: false, produto: false, fluxo: false, avaliacao: false, historicoPagamento: false })}
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center transition-colors z-10"
             >
               ✕
             </button>
             <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+              {/* HISTORICO PAGAMENTO MODAL */}
+              {isModalOpen.historicoPagamento && historicoAluno && (
+                <div>
+                  <h3 className="text-lg font-black text-white mb-2">Histórico de Pagamentos</h3>
+                  <div className="text-sm font-bold text-slate-400 mb-6">Aluno: {historicoAluno.name}</div>
+                  
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                    {historicoData.map(m => (
+                      <div key={m.id} className="bg-slate-950/40 p-4 rounded-2xl border border-slate-850/60 flex flex-col gap-2">
+                        <div className="flex justify-between items-start flex-wrap gap-2">
+                          <div>
+                            <div className="text-white font-bold">Vencimento: {new Date(m.due_date).toLocaleDateString('pt-BR')}</div>
+                            <div className="text-slate-500 text-xs">Valor: R$ {parseFloat(m.amount).toFixed(2)}</div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            m.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' :
+                            m.status === 'overdue' ? 'bg-red-500/10 text-red-400 border border-red-500/25' :
+                            'bg-amber-500/10 text-amber-400 border border-amber-500/25'
+                          }`}>
+                            {m.status === 'paid' ? 'Pago' : m.status === 'overdue' ? 'Vencida' : 'Pendente'}
+                          </span>
+                        </div>
+                        {m.status === 'paid' && m.paid_at && (
+                          <div className="text-[10px] text-emerald-500 font-semibold mt-1 border-t border-slate-850 pt-2">
+                            <div className="mb-0.5">Pago em: {new Date(m.paid_at).toLocaleDateString('pt-BR')}</div>
+                            <div>Forma de Pgto: {m.payment_method || 'Manual / Desconhecido'}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {historicoData.length === 0 && (
+                      <div className="text-slate-500 py-6 text-center italic">Nenhuma mensalidade encontrada.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* PRODUTO FORM MODAL */}
               {isModalOpen.produto && (
                 <div>
@@ -1082,7 +1134,13 @@ function AdminDashboard({ user, logout }) {
                           <div className="text-slate-600 text-[10px] mt-0.5">Turmas: {a.turmas.map(t => t.name).join(', ') || 'Nenhuma'}</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                        <button
+                          onClick={() => handleOpenHistorico(a)}
+                          className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-bold py-1.5 px-3 rounded-lg text-xs border border-blue-500/20 hover:border-blue-500/30"
+                        >
+                          Histórico Pgto
+                        </button>
                         <button
                           onClick={() => { handleEditAluno(a); setIsModalOpen({ ...isModalOpen, aluno: true }); }}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
