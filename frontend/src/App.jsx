@@ -44,7 +44,7 @@ function App() {
   if (loading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-slate-950 font-black text-white text-3xl tracking-tighter italic animate-pulse">
-        CARREGANDO ARENA...
+        CARREGANDO SISTEMA...
       </div>
     );
   }

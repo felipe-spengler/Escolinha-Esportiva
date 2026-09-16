@@ -4,15 +4,15 @@ test.describe('Autenticação de Administrador', () => {
   test('deve conseguir fazer login com credenciais validas', async ({ page }) => {
     await page.goto('/login');
     
-    await expect(page).toHaveTitle(/Arena - Gestão Esportiva/);
-    await expect(page.getByText('Arena Escolinha')).toBeVisible();
+    await expect(page).toHaveTitle(/Escola Paraná Clube Brasil/);
+    await expect(page.getByText('Escola Paraná Clube Brasil')).toBeVisible();
 
     await page.getByPlaceholder('seuemail@exemplo.com').fill('admin@admin.com');
     await page.getByPlaceholder('••••••••').fill('senha123');
     await page.getByRole('button', { name: 'ENTRAR NO SISTEMA' }).click();
 
     await expect(page).toHaveURL(/\/admin/);
-    await expect(page.getByText('ARENA - GESTÃO ESPORTIVA')).toBeVisible();
+    await expect(page.getByText('ESCOLA PARANÁ CLUBE BRASIL')).toBeVisible();
   });
 
   test('deve exibir erro com credenciais invalidas', async ({ page }) => {

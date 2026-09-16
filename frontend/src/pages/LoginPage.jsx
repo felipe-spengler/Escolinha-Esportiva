@@ -42,10 +42,10 @@ function LoginPage({ onLogin }) {
 
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 mb-4">
-            <span className="text-3xl">⚽</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <img src="/logo_sistema.jpg" alt="Logo" className="w-full h-full object-cover rounded-2xl shadow-lg border border-slate-700/50" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Arena Escolinha</h2>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Escola Paraná Clube Brasil</h2>
           <p className="text-slate-400 mt-2 text-sm">Entre com suas credenciais para acessar o portal</p>
         </div>
 
