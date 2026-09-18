@@ -98,6 +98,7 @@ function AdminDashboard({ user, logout }) {
         api.get('/fluxo-caixa'),
         api.get('/mensalidades'),
         api.get('/settings'),
+        api.get('/avaliacoes'),
       ]);
       setAlunos(alunosRes.data);
       setResponsaveis(respRes.data);
@@ -106,6 +107,9 @@ function AdminDashboard({ user, logout }) {
       setProdutos(prodsRes.data);
       setFluxoCaixa(fluxoRes.data);
       setMensalidadesList(mensRes.data);
+      if (avaliacoesRes && avaliacoesRes.data) {
+        setAvaliacoesList(avaliacoesRes.data);
+      }
       if (settingsRes && settingsRes.data) {
          setSettingsForm({
             juros_mensal: settingsRes.data.juros_mensal || '1.00',
@@ -376,11 +380,26 @@ function AdminDashboard({ user, logout }) {
       return;
     }
     try {
-      await api.post('/avaliacoes', avaliacaoForm);
+      if (avaliacaoForm.id) {
+        await api.put(`/avaliacoes/${avaliacaoForm.id}`, avaliacaoForm);
+      } else {
+        await api.post('/avaliacoes', avaliacaoForm);
+      }
       alert('Ficha de avaliação técnica registrada com sucesso!');
-      setAvaliacaoForm({ aluno_id: '', passe: 5, chute: 5, dominio: 5, condicionamento: 5, disciplina: 5, parecer: '', date: new Date().toISOString().split('T')[0] });
+      setAvaliacaoForm({ id: null, aluno_id: '', passe: 5, chute: 5, dominio: 5, condicionamento: 5, disciplina: 5, parecer: '', date: new Date().toISOString().split('T')[0] });
+      fetchAllData();
     } catch (e) {
       alert('Erro ao salvar avaliação');
+    }
+  };
+
+  const handleDeleteAvaliacao = async (id) => {
+    if (!confirm('Deseja realmente excluir esta avaliação?')) return;
+    try {
+      await api.delete(`/avaliacoes/${id}`);
+      fetchAllData();
+    } catch (e) {
+      alert('Erro ao excluir avaliação');
     }
   };
 
