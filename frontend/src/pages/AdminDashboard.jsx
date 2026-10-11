@@ -54,7 +54,7 @@ function AdminDashboard({ user, logout }) {
   // Special feature forms
   const [chamadaState, setChamadaState] = useState({ turma_id: '', date: new Date().toISOString().split('T')[0], Alunos: [] });
   const [avaliacaoForm, setAvaliacaoForm] = useState({ aluno_id: '', passe: 5, chute: 5, dominio: 5, condicionamento: 5, disciplina: 5, parecer: '', date: new Date().toISOString().split('T')[0] });
-  const [settingsForm, setSettingsForm] = useState({ juros_mensal: '1.00', multa_atraso: '2.00' });
+  const [settingsForm, setSettingsForm] = useState({ juros_mensal: '1.00', multa_atraso: '2.00', payment_method: 'manual', pix_key: '' });
   const [mensalidadesList, setMensalidadesList] = useState([]);
   const [mensalidadeFilter, setMensalidadeFilter] = useState('');
   
@@ -113,7 +113,9 @@ function AdminDashboard({ user, logout }) {
       if (settingsRes && settingsRes.data) {
          setSettingsForm({
             juros_mensal: settingsRes.data.juros_mensal || '1.00',
-            multa_atraso: settingsRes.data.multa_atraso || '2.00'
+            multa_atraso: settingsRes.data.multa_atraso || '2.00',
+            payment_method: settingsRes.data.payment_method || 'manual',
+            pix_key: settingsRes.data.pix_key || ''
          });
       }
 

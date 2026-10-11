@@ -12,5 +12,7 @@ class Setting extends Model
     protected $fillable = [
         'juros_mensal',
         'multa_atraso',
+        'payment_method',
+        'pix_key',
     ];
 }

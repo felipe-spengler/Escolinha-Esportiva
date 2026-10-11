@@ -71,27 +71,33 @@ class GerarMensalidades extends Command
                                 'status' => 'pending',
                             ]);
 
-                            $payment = $asaasService->createPayment(
-                                $aluno->responsavel,
-                                $amount,
-                                "Mensalidade Escolinha - {$currentMonth}/{$currentYear} - Aluno: {$aluno->name}",
-                                (string) $mensalidade->id,
-                                $dueDateStr,
-                                $juros,
-                                $multa
-                            );
+                            if ($settings && $settings->payment_method === 'manual') {
+                                // Manual mode: just leave the mensalidade as pending
+                                $criadas++;
+                                $this->info("Mensalidade gerada (Manual) para {$aluno->name} ({$currentMonth}/{$currentYear})");
+                            } else {
+                                $payment = $asaasService->createPayment(
+                                    $aluno->responsavel,
+                                    $amount,
+                                    "Mensalidade Escolinha - {$currentMonth}/{$currentYear} - Aluno: {$aluno->name}",
+                                    (string) $mensalidade->id,
+                                    $dueDateStr,
+                                    $juros,
+                                    $multa
+                                );
 
-                            if (isset($payment['id'])) {
-                                $mensalidade->update([
-                                    'asaas_payment_id' => $payment['id'],
-                                    'payment_url' => $payment['invoiceUrl'] ?? null,
-                                    'invoice_url' => $payment['bankSlipUrl'] ?? null,
-                                    'pix_code' => $payment['pix_payload'] ?? null,
-                                ]);
+                                if (isset($payment['id'])) {
+                                    $mensalidade->update([
+                                        'asaas_payment_id' => $payment['id'],
+                                        'payment_url' => $payment['invoiceUrl'] ?? null,
+                                        'invoice_url' => $payment['bankSlipUrl'] ?? null,
+                                        'pix_code' => $payment['pix_payload'] ?? null,
+                                    ]);
+                                }
+
+                                $criadas++;
+                                $this->info("Mensalidade gerada (Asaas) para {$aluno->name} ({$currentMonth}/{$currentYear})");
                             }
-
-                            $criadas++;
-                            $this->info("Mensalidade gerada para {$aluno->name} ({$currentMonth}/{$currentYear})");
                         } catch (\Exception $e) {
                             Log::error("Erro Asaas Mensalidade (Cron) ID {$mensalidade->id}: " . $e->getMessage());
                             $this->error("Erro ao gerar para {$aluno->name}: " . $e->getMessage());

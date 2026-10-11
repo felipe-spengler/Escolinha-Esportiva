@@ -90,24 +90,31 @@ class FinanceController extends Controller
                         'status' => 'pending',
                     ]);
 
-                    $payment = $asaasService->createPayment(
-                        $aluno->responsavel,
-                        $amount,
-                        "Mensalidade Escolinha - Aluno: {$aluno->name}",
-                        (string) $mensalidade->id,
-                        $dueDate
-                    );
+                    $settings = Setting::first();
+                    if ($settings && $settings->payment_method === 'manual') {
+                        // Skip Asaas creation, just keep as pending
+                        // In manual mode, the parent sees the global pix_key and pays, admin lowers manually.
+                        $criadas++;
+                    } else {
+                        $payment = $asaasService->createPayment(
+                            $aluno->responsavel,
+                            $amount,
+                            "Mensalidade Escolinha - Aluno: {$aluno->name}",
+                            (string) $mensalidade->id,
+                            $dueDate
+                        );
 
-                    if (isset($payment['id'])) {
-                        $mensalidade->update([
-                            'asaas_payment_id' => $payment['id'],
-                            'payment_url' => $payment['invoiceUrl'] ?? null,
-                            'invoice_url' => $payment['bankSlipUrl'] ?? null,
-                            'pix_code' => $payment['pix_payload'] ?? null,
-                        ]);
+                        if (isset($payment['id'])) {
+                            $mensalidade->update([
+                                'asaas_payment_id' => $payment['id'],
+                                'payment_url' => $payment['invoiceUrl'] ?? null,
+                                'invoice_url' => $payment['bankSlipUrl'] ?? null,
+                                'pix_code' => $payment['pix_payload'] ?? null,
+                            ]);
+                        }
+
+                        $criadas++;
                     }
-
-                    $criadas++;
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Erro Asaas Mensalidade ID {$mensalidade->id}: " . $e->getMessage());
                 }
@@ -126,7 +133,12 @@ class FinanceController extends Controller
     {
         $setting = Setting::first();
         if (!$setting) {
-            $setting = Setting::create(['juros_mensal' => 1.00, 'multa_atraso' => 2.00]);
+            $setting = Setting::create([
+                'juros_mensal' => 1.00,
+                'multa_atraso' => 2.00,
+                'payment_method' => 'manual',
+                'pix_key' => null,
+            ]);
         }
         return response()->json($setting);
     }
@@ -136,10 +148,13 @@ class FinanceController extends Controller
         $data = $request->validate([
             'juros_mensal' => 'required|numeric|min:0|max:100',
             'multa_atraso' => 'required|numeric|min:0|max:100',
+            'payment_method' => 'nullable|string|in:asaas,manual',
+            'pix_key' => 'nullable|string',
         ]);
 
         $setting = Setting::first();
         if (!$setting) {
+            $data['payment_method'] = $data['payment_method'] ?? 'manual';
             $setting = Setting::create($data);
         } else {
             $setting->update($data);

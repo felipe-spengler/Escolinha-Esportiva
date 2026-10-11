@@ -305,13 +305,40 @@ function ParentPortal({ logout }) {
                                m.status === 'overdue' ? 'Vencida' : 'Pendente'}
                             </span>
 
-                            {m.status !== 'paid' && m.pix_code && (
-                              <button
-                                onClick={() => setPixModal(m)}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition-all"
-                              >
-                                Pagar via PIX
-                              </button>
+                            {m.status !== 'paid' && (
+                              <div className="flex gap-2">
+                                {detalhes.settings?.payment_method === 'manual' && detalhes.settings?.pix_key && (
+                                  <button
+                                    onClick={() => setPixModal({ type: 'manual', key: detalhes.settings.pix_key })}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                                  >
+                                    Pagar via PIX
+                                  </button>
+                                )}
+
+                                {detalhes.settings?.payment_method !== 'manual' && (
+                                  <>
+                                    {m.pix_code && (
+                                      <button
+                                        onClick={() => setPixModal({ type: 'asaas', key: m.pix_code })}
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                                      >
+                                        PIX (Copia e Cola)
+                                      </button>
+                                    )}
+                                    {m.payment_url && (
+                                      <a
+                                        href={m.payment_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="bg-teal-500 hover:bg-teal-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition-all inline-block"
+                                      >
+                                        Pagar / Boleto
+                                      </a>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -336,23 +363,29 @@ function ParentPortal({ logout }) {
             <h3 className="text-xl font-bold text-white mb-4">Pagamento via PIX</h3>
             <p className="text-slate-400 text-sm">Copie a linha digitável do PIX abaixo para pagar no aplicativo do seu banco:</p>
             
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 my-4 select-all break-all text-xs font-mono text-emerald-400">
-              {pixModal.pix_code}
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 my-4 select-all break-all text-xs font-mono text-emerald-400 text-center">
+              {pixModal.key}
             </div>
 
-            <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs p-4 rounded-2xl leading-relaxed mb-6">
-              ⚠️ <strong>Importante:</strong> Após realizar o pagamento, a baixa é manual. Envie o comprovante para o administrador da escolinha para validar o pagamento.
-            </div>
+            {pixModal.type === 'manual' ? (
+              <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs p-4 rounded-2xl leading-relaxed mb-6">
+                ⚠️ <strong>Importante:</strong> Após realizar o pagamento, a baixa é manual. Envie o comprovante para o administrador da escolinha para validar o pagamento.
+              </div>
+            ) : (
+              <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs p-4 rounded-2xl leading-relaxed mb-6">
+                ✅ O pagamento será reconhecido automaticamente em alguns instantes.
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(pixModal.pix_code);
-                  alert('Código PIX copiado com sucesso!');
+                  navigator.clipboard.writeText(pixModal.key);
+                  alert('Chave/Código PIX copiado com sucesso!');
                 }}
                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-sm"
               >
-                Copiar Código PIX
+                Copiar PIX
               </button>
               <button
                 onClick={() => setPixModal(null)}

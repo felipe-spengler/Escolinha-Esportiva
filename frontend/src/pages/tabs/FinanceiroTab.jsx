@@ -84,6 +84,31 @@ function FinanceiroTab({ isAdmin, mensalidadeFilter, setMensalidadeFilter, mensa
               className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
             />
           </div>
+          <div>
+            <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Método de Cobrança</label>
+            <select
+              value={settingsForm.payment_method}
+              onChange={(e) => setSettingsForm(prev => ({ ...prev, payment_method: e.target.value }))}
+              required
+              className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+            >
+              <option value="manual">Manual (Chave PIX Própria)</option>
+              <option value="asaas">Automático (Integração ASAAS)</option>
+            </select>
+          </div>
+          {settingsForm.payment_method === 'manual' && (
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Sua Chave PIX</label>
+              <input
+                type="text"
+                value={settingsForm.pix_key || ''}
+                onChange={(e) => setSettingsForm(prev => ({ ...prev, pix_key: e.target.value }))}
+                placeholder="Ex: 123.456.789-00 ou email@exemplo.com"
+                className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+              />
+              <p className="text-slate-500 text-[10px] mt-1">Essa chave será exibida para os pais copiarem e pagarem no aplicativo do banco.</p>
+            </div>
+          )}
           <button
             type="submit"
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-xs uppercase"

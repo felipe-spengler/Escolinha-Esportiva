@@ -62,6 +62,7 @@ class PortalController extends Controller
             'frequencias' => $frequencias,
             'avaliacoes' => $avaliacoes,
             'mensalidades' => $mensalidades,
+            'settings' => \App\Models\Setting::first(),
         ]);
     }
 }
