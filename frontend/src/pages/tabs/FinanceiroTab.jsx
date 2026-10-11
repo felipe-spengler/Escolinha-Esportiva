@@ -97,16 +97,42 @@ function FinanceiroTab({ isAdmin, mensalidadeFilter, setMensalidadeFilter, mensa
             </select>
           </div>
           {settingsForm.payment_method === 'manual' && (
-            <div>
-              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Sua Chave PIX</label>
-              <input
-                type="text"
-                value={settingsForm.pix_key || ''}
-                onChange={(e) => setSettingsForm(prev => ({ ...prev, pix_key: e.target.value }))}
-                placeholder="Ex: 123.456.789-00 ou email@exemplo.com"
-                className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
-              />
-              <p className="text-slate-500 text-[10px] mt-1">Essa chave será exibida para os pais copiarem e pagarem no aplicativo do banco.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Sua Chave PIX</label>
+                <input
+                  type="text"
+                  value={settingsForm.pix_key || ''}
+                  onChange={(e) => setSettingsForm(prev => ({ ...prev, pix_key: e.target.value }))}
+                  placeholder="Ex: 123.456.789-00 ou email@exemplo.com"
+                  className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Nome do Recebedor (PIX)</label>
+                  <input
+                    type="text"
+                    value={settingsForm.pix_name || ''}
+                    onChange={(e) => setSettingsForm(prev => ({ ...prev, pix_name: e.target.value }))}
+                    maxLength="25"
+                    placeholder="Ex: Escolinha Esportiva"
+                    className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Cidade (PIX)</label>
+                  <input
+                    type="text"
+                    value={settingsForm.pix_city || ''}
+                    onChange={(e) => setSettingsForm(prev => ({ ...prev, pix_city: e.target.value }))}
+                    maxLength="15"
+                    placeholder="Ex: Sao Paulo"
+                    className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl px-4 py-2.5 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-slate-500 text-[10px] mt-1">Esses dados são usados para gerar o QR Code correto do PIX no portal dos pais.</p>
             </div>
           )}
           <button

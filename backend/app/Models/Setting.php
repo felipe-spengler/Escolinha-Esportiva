@@ -14,5 +14,7 @@ class Setting extends Model
         'multa_atraso',
         'payment_method',
         'pix_key',
+        'pix_name',
+        'pix_city',
     ];
 }

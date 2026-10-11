@@ -115,7 +115,9 @@ function AdminDashboard({ user, logout }) {
             juros_mensal: settingsRes.data.juros_mensal || '1.00',
             multa_atraso: settingsRes.data.multa_atraso || '2.00',
             payment_method: settingsRes.data.payment_method || 'manual',
-            pix_key: settingsRes.data.pix_key || ''
+            pix_key: settingsRes.data.pix_key || '',
+            pix_name: settingsRes.data.pix_name || '',
+            pix_city: settingsRes.data.pix_city || ''
          });
       }
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '../utils/pixPayload';
 
 function ParentPortal({ logout }) {
   const [filhos, setFilhos] = useState([]);
@@ -309,7 +311,7 @@ function ParentPortal({ logout }) {
                               <div className="flex gap-2">
                                 {detalhes.settings?.payment_method === 'manual' && detalhes.settings?.pix_key && (
                                   <button
-                                    onClick={() => setPixModal({ type: 'manual', key: detalhes.settings.pix_key })}
+                                    onClick={() => setPixModal({ type: 'manual', key: detalhes.settings.pix_key, amount: m.amount })}
                                     className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl transition-all"
                                   >
                                     Pagar via PIX
@@ -357,14 +359,23 @@ function ParentPortal({ logout }) {
       )}
 
       {/* PIX MODAL */}
-      {pixModal && (
+      {pixModal && (() => {
+        const pixCodeToDisplay = pixModal.type === 'manual' 
+          ? generatePixPayload({ key: pixModal.key, name: detalhes.settings?.pix_name || 'Escolinha', city: detalhes.settings?.pix_city || 'Cidade', amount: pixModal.amount })
+          : pixModal.key;
+
+        return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Pagamento via PIX</h3>
-            <p className="text-slate-400 text-sm">Copie a linha digitável do PIX abaixo para pagar no aplicativo do seu banco:</p>
+            <p className="text-slate-400 text-sm">Escaneie o QR Code ou copie a linha digitável abaixo para pagar no aplicativo do seu banco:</p>
             
+            <div className="flex justify-center my-6 bg-white p-4 rounded-xl w-fit mx-auto">
+              <QRCodeSVG value={pixCodeToDisplay} size={200} />
+            </div>
+
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 my-4 select-all break-all text-xs font-mono text-emerald-400 text-center">
-              {pixModal.key}
+              {pixCodeToDisplay}
             </div>
 
             {pixModal.type === 'manual' ? (
@@ -380,7 +391,7 @@ function ParentPortal({ logout }) {
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(pixModal.key);
+                  navigator.clipboard.writeText(pixCodeToDisplay);
                   alert('Chave/Código PIX copiado com sucesso!');
                 }}
                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all text-sm"
@@ -396,7 +407,8 @@ function ParentPortal({ logout }) {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
