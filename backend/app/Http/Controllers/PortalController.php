@@ -8,17 +8,35 @@ use App\Models\Frequencia;
 use App\Models\Avaliacao;
 use App\Models\Mensalidade;
 
+use App\Models\Setting;
+use Carbon\Carbon;
+
 class PortalController extends Controller
 {
     public function listFilhos(Request $request)
     {
         $parent = $request->get('auth_user');
 
+        // Automatically update any past-due pending mensalidades to 'overdue' for this parent's children
+        $alunoIds = Aluno::where('responsavel_id', $parent->id)->pluck('id');
+        Mensalidade::whereIn('aluno_id', $alunoIds)
+            ->where('status', 'pending')
+            ->where('due_date', '<', Carbon::today())
+            ->update(['status' => 'overdue']);
+
         $filhos = Aluno::where('responsavel_id', $parent->id)
-            ->with('turmas')
+            ->with([
+                'turmas',
+                'mensalidades' => function ($q) {
+                    $q->orderBy('due_date', 'desc');
+                }
+            ])
             ->get();
 
-        return response()->json($filhos);
+        return response()->json([
+            'filhos' => $filhos,
+            'settings' => Setting::first(),
+        ]);
     }
 
     public function getFilhoDetalhes(Request $request, Aluno $aluno)
@@ -29,6 +47,12 @@ class PortalController extends Controller
         if ($aluno->responsavel_id !== $parent->id) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
+
+        // Automatically update past-due pending mensalidades to 'overdue' for this aluno
+        Mensalidade::where('aluno_id', $aluno->id)
+            ->where('status', 'pending')
+            ->where('due_date', '<', Carbon::today())
+            ->update(['status' => 'overdue']);
 
         // Calculate attendance rate
         $totalClasses = Frequencia::where('aluno_id', $aluno->id)->count();
@@ -62,7 +86,7 @@ class PortalController extends Controller
             'frequencias' => $frequencias,
             'avaliacoes' => $avaliacoes,
             'mensalidades' => $mensalidades,
-            'settings' => \App\Models\Setting::first(),
+            'settings' => Setting::first(),
         ]);
     }
 }
