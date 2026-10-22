@@ -551,37 +551,39 @@ function ParentPortal({ logout }) {
                   )}
                 </div>
 
-                {/* Show Raw PIX Key when manual */}
-                {isManual && activeSettings?.pix_key && (
-                  <div className="w-full mb-3 bg-slate-900/90 border border-slate-800 rounded-xl p-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Chave PIX Oficial:</span>
-                      <span className="text-[10px] text-emerald-400 font-bold">Transferência PIX</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 font-mono text-xs text-white bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800 select-all truncate">
-                        {activeSettings.pix_key}
+                {/* 
+                  Chave PIX avulsa mantida no código caso queira reexibir futuramente:
+                  {isManual && activeSettings?.pix_key && (
+                    <div className="w-full mb-3 bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Chave PIX Oficial:</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">Transferência PIX</span>
                       </div>
-                      <button
-                        onClick={() => copyToClipboard(activeSettings.pix_key, 'key')}
-                        className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 flex-shrink-0"
-                      >
-                        {copyFeedback === 'key' ? '✅ Copiada!' : 'Copiar Chave'}
-                      </button>
-                    </div>
-                    {activeSettings.pix_name && (
-                      <div className="text-[10px] text-slate-400 mt-1.5">
-                        Beneficiário: <strong className="text-slate-200">{activeSettings.pix_name}</strong> {activeSettings.pix_city ? `• ${activeSettings.pix_city}` : ''}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 font-mono text-xs text-white bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800 select-all truncate">
+                          {activeSettings.pix_key}
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(activeSettings.pix_key, 'key')}
+                          className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 flex-shrink-0"
+                        >
+                          {copyFeedback === 'key' ? '✅ Copiada!' : 'Copiar Chave'}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                */}
 
                 {/* Show Pix Copia e Cola */}
                 {pixCodeToUse && (
                   <div className="w-full">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[10px] uppercase font-bold text-slate-400">PIX Copia e Cola:</span>
+                      {activeSettings?.pix_name && (
+                        <span className="text-[10px] text-slate-400">
+                          Beneficiário: <strong className="text-slate-200">{activeSettings.pix_name}</strong> {activeSettings.pix_city ? `• ${activeSettings.pix_city}` : ''}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 font-mono text-[11px] text-emerald-400 bg-slate-950 px-2.5 py-2 rounded-lg border border-slate-800 select-all truncate">
@@ -707,37 +709,35 @@ function ParentPortal({ logout }) {
                 <QRCodeSVG value={pixCodeToDisplay} size={190} level="M" />
               </div>
 
-              {/* Raw Key when manual */}
-              {isManual && activeSettings?.pix_key && (
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80 mb-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Chave PIX:</span>
-                    <button
-                      onClick={() => copyToClipboard(activeSettings.pix_key, 'modal_key')}
-                      className="text-emerald-400 hover:text-emerald-300 text-xs font-bold"
-                    >
-                      {copyFeedback === 'modal_key' ? '✅ Copiada!' : 'Copiar Chave'}
-                    </button>
+              {/* 
+                Chave PIX avulsa mantida no código caso queira reexibir futuramente:
+                {isManual && activeSettings?.pix_key && (
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80 mb-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Chave PIX:</span>
+                      <button
+                        onClick={() => copyToClipboard(activeSettings.pix_key, 'modal_key')}
+                        className="text-emerald-400 hover:text-emerald-300 text-xs font-bold"
+                      >
+                        {copyFeedback === 'modal_key' ? '✅ Copiada!' : 'Copiar Chave'}
+                      </button>
+                    </div>
+                    <div className="font-mono text-xs text-white truncate select-all">{activeSettings.pix_key}</div>
                   </div>
-                  <div className="font-mono text-xs text-white truncate select-all">{activeSettings.pix_key}</div>
-                  {activeSettings.pix_name && (
-                    <div className="text-[10px] text-slate-500 mt-1">Beneficiário: {activeSettings.pix_name}</div>
-                  )}
-                </div>
-              )}
+                )}
+              */}
 
               {/* PIX Copia e Cola */}
               <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80 my-3">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px] uppercase font-bold text-slate-400">Código PIX Copia e Cola:</span>
-                  <button
-                    onClick={() => copyToClipboard(pixCodeToDisplay, 'modal_code')}
-                    className="text-emerald-400 hover:text-emerald-300 text-xs font-bold"
-                  >
-                    {copyFeedback === 'modal_code' ? '✅ Copiado!' : 'Copiar Código'}
-                  </button>
+                  {activeSettings?.pix_name && (
+                    <span className="text-[10px] text-slate-400">
+                      Beneficiário: <strong className="text-slate-200">{activeSettings.pix_name}</strong>
+                    </span>
+                  )}
                 </div>
-                <div className="select-all break-all text-[11px] font-mono text-emerald-400 line-clamp-2">
+                <div className="select-all break-all text-[11px] font-mono text-emerald-400 line-clamp-2 my-1">
                   {pixCodeToDisplay}
                 </div>
               </div>
