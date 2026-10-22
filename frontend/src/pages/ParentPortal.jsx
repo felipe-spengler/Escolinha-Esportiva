@@ -88,7 +88,7 @@ function ParentPortal({ logout }) {
     filhos.forEach(f => {
       (f.mensalidades || []).forEach(m => {
         const dueDate = new Date(m.due_date + 'T23:59:59');
-        const isOverdue = m.status === 'overdue' || (m.status === 'pending' && dueDate < today);
+        const isOverdue = parseFloat(m.amount) > 0 && (m.status === 'overdue' || (m.status === 'pending' && dueDate < today));
         if (isOverdue && !list.some(item => item.id === m.id)) {
           list.push({ ...m, alunoNome: f.name, alunoId: f.id });
         }
@@ -99,7 +99,7 @@ function ParentPortal({ logout }) {
     if (detalhes?.mensalidades && detalhes?.aluno) {
       detalhes.mensalidades.forEach(m => {
         const dueDate = new Date(m.due_date + 'T23:59:59');
-        const isOverdue = m.status === 'overdue' || (m.status === 'pending' && dueDate < today);
+        const isOverdue = parseFloat(m.amount) > 0 && (m.status === 'overdue' || (m.status === 'pending' && dueDate < today));
         if (isOverdue && !list.some(item => item.id === m.id)) {
           list.push({ ...m, alunoNome: detalhes.aluno.name, alunoId: detalhes.aluno.id });
         }

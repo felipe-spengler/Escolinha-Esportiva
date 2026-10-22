@@ -9,6 +9,7 @@ use App\Models\Produto;
 use App\Models\VendaProduto;
 use App\Models\FluxoCaixa;
 use App\Models\Setting;
+use App\Services\MensalidadeService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -19,6 +20,15 @@ class FinanceController extends Controller
     // ==========================================
     public function listMensalidades(Request $request)
     {
+        // Garante que todos os alunos ativos tenham mensalidade gerada para o mês atual
+        MensalidadeService::garantirMensalidadesTodosAlunosAtivos();
+
+        // Atualiza pendentes com data vencida para 'overdue' (somente se valor > 0)
+        Mensalidade::where('status', 'pending')
+            ->where('amount', '>', 0)
+            ->where('due_date', '<', Carbon::today())
+            ->update(['status' => 'overdue']);
+
         // Pegar apenas a mensalidade mais recente de cada aluno (status atual real)
         $latestIds = DB::table('mensalidades')
             ->select(DB::raw('MAX(id) as id'))

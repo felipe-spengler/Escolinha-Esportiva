@@ -188,7 +188,7 @@ function AdminDashboard({ user, logout }) {
       medical_notes: a.medical_notes || '',
       photo: a.photo_path || '',
       turma_ids: a.turmas.map(t => t.id),
-      mensalidade_valor: a.mensalidade_valor || 120,
+      mensalidade_valor: (a.mensalidade_valor !== undefined && a.mensalidade_valor !== null) ? a.mensalidade_valor : 120,
       dia_vencimento: a.dia_vencimento || 10
     });
   };

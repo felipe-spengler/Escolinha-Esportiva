@@ -9,6 +9,7 @@ use App\Models\Avaliacao;
 use App\Models\Mensalidade;
 
 use App\Models\Setting;
+use App\Services\MensalidadeService;
 use Carbon\Carbon;
 
 class PortalController extends Controller
@@ -17,14 +18,24 @@ class PortalController extends Controller
     {
         $parent = $request->get('auth_user');
 
-        // Automatically update any past-due pending mensalidades to 'overdue' for this parent's children
-        $alunoIds = Aluno::where('responsavel_id', $parent->id)->pluck('id');
+        $filhos = Aluno::where('responsavel_id', $parent->id)->get();
+
+        // Garante que cada filho ativo tenha sua mensalidade do mês gerada no sistema
+        foreach ($filhos as $filho) {
+            if ($filho->status === 'active') {
+                MensalidadeService::garantirMensalidadeAluno($filho);
+            }
+        }
+
+        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0)
+        $alunoIds = $filhos->pluck('id');
         Mensalidade::whereIn('aluno_id', $alunoIds)
             ->where('status', 'pending')
+            ->where('amount', '>', 0)
             ->where('due_date', '<', Carbon::today())
             ->update(['status' => 'overdue']);
 
-        $filhos = Aluno::where('responsavel_id', $parent->id)
+        $filhosCarregados = Aluno::where('responsavel_id', $parent->id)
             ->with([
                 'turmas',
                 'mensalidades' => function ($q) {
@@ -34,7 +45,7 @@ class PortalController extends Controller
             ->get();
 
         return response()->json([
-            'filhos' => $filhos,
+            'filhos' => $filhosCarregados,
             'settings' => Setting::first(),
         ]);
     }
@@ -48,9 +59,15 @@ class PortalController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        // Automatically update past-due pending mensalidades to 'overdue' for this aluno
+        // Garante que o aluno tenha a mensalidade do mês atual gerada
+        if ($aluno->status === 'active') {
+            MensalidadeService::garantirMensalidadeAluno($aluno);
+        }
+
+        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0)
         Mensalidade::where('aluno_id', $aluno->id)
             ->where('status', 'pending')
+            ->where('amount', '>', 0)
             ->where('due_date', '<', Carbon::today())
             ->update(['status' => 'overdue']);
 

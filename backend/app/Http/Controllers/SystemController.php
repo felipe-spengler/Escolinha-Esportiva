@@ -11,6 +11,7 @@ use App\Models\Turma;
 use App\Models\User;
 use App\Models\Mensalidade;
 use App\Models\FluxoCaixa;
+use App\Services\MensalidadeService;
 
 class SystemController extends Controller
 {
@@ -61,13 +62,16 @@ class SystemController extends Controller
             'status' => $data['status'],
             'medical_notes' => $data['medical_notes'] ?? null,
             'photo_path' => $photoPath,
-            'mensalidade_valor' => $data['mensalidade_valor'] ?? 120.00,
-            'dia_vencimento' => $data['dia_vencimento'] ?? 10,
+            'mensalidade_valor' => (isset($data['mensalidade_valor']) && is_numeric($data['mensalidade_valor'])) ? (float) $data['mensalidade_valor'] : 120.00,
+            'dia_vencimento' => (isset($data['dia_vencimento']) && is_numeric($data['dia_vencimento'])) ? (int) $data['dia_vencimento'] : 10,
         ]);
 
         if (!empty($data['turma_ids'])) {
             $aluno->turmas()->sync($data['turma_ids']);
         }
+
+        // Garante que o novo aluno já tenha sua mensalidade inicial gerada no sistema
+        MensalidadeService::garantirMensalidadeAluno($aluno);
 
         return response()->json($aluno->load(['responsavel', 'turmas']), 201);
     }
@@ -108,8 +112,8 @@ class SystemController extends Controller
             'status' => $data['status'],
             'medical_notes' => $data['medical_notes'] ?? null,
             'photo_path' => $photoPath,
-            'mensalidade_valor' => $data['mensalidade_valor'] ?? 120.00,
-            'dia_vencimento' => $data['dia_vencimento'] ?? 10,
+            'mensalidade_valor' => (isset($data['mensalidade_valor']) && is_numeric($data['mensalidade_valor'])) ? (float) $data['mensalidade_valor'] : 120.00,
+            'dia_vencimento' => (isset($data['dia_vencimento']) && is_numeric($data['dia_vencimento'])) ? (int) $data['dia_vencimento'] : 10,
         ]);
 
         $aluno->turmas()->sync($data['turma_ids'] ?? []);
