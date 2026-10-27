@@ -41,18 +41,24 @@ class SystemController extends Controller
         if ($request->has('photo') && !empty($request->photo)) {
             // If base64
             if (preg_match('/^data:image\/(\w+);base64,/', $request->photo, $type)) {
-                $image = substr($request->photo, strpos($request->photo, ',') + 1);
-                $type = strtolower($type[1]);
-                $image = base64_decode($image);
-                $fileName = 'photo_' . time() . '.' . $type;
-                Storage::disk('public')->put('alunos/' . $fileName, $image);
-                $photoPath = '/storage/alunos/' . $fileName;
+                $ext = strtolower($type[1]);
+                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                if (in_array($ext, $allowed)) {
+                    $image = substr($request->photo, strpos($request->photo, ',') + 1);
+                    $image = base64_decode($image);
+                    $fileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                    Storage::disk('public')->put('alunos/' . $fileName, $image);
+                    $photoPath = '/storage/alunos/' . $fileName;
+                }
             } else {
                 $photoPath = $request->photo;
             }
         } elseif ($request->hasFile('photo_file')) {
-            $path = $request->file('photo_file')->store('alunos', 'public');
-            $photoPath = '/storage/' . $path;
+            $file = $request->file('photo_file');
+            if (in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+                $path = $file->store('alunos', 'public');
+                $photoPath = '/storage/' . $path;
+            }
         }
 
         $aluno = Aluno::create([
@@ -93,16 +99,22 @@ class SystemController extends Controller
         $photoPath = $aluno->photo_path;
         if ($request->has('photo') && !empty($request->photo) && str_starts_with($request->photo, 'data:')) {
             if (preg_match('/^data:image\/(\w+);base64,/', $request->photo, $type)) {
-                $image = substr($request->photo, strpos($request->photo, ',') + 1);
-                $type = strtolower($type[1]);
-                $image = base64_decode($image);
-                $fileName = 'photo_' . time() . '.' . $type;
-                Storage::disk('public')->put('alunos/' . $fileName, $image);
-                $photoPath = '/storage/alunos/' . $fileName;
+                $ext = strtolower($type[1]);
+                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                if (in_array($ext, $allowed)) {
+                    $image = substr($request->photo, strpos($request->photo, ',') + 1);
+                    $image = base64_decode($image);
+                    $fileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                    Storage::disk('public')->put('alunos/' . $fileName, $image);
+                    $photoPath = '/storage/alunos/' . $fileName;
+                }
             }
         } elseif ($request->hasFile('photo_file')) {
-            $path = $request->file('photo_file')->store('alunos', 'public');
-            $photoPath = '/storage/' . $path;
+            $file = $request->file('photo_file');
+            if (in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+                $path = $file->store('alunos', 'public');
+                $photoPath = '/storage/' . $path;
+            }
         }
 
         $aluno->update([
