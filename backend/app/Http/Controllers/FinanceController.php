@@ -23,20 +23,32 @@ class FinanceController extends Controller
         // Garante que todos os alunos ativos tenham mensalidade gerada para o mês atual
         MensalidadeService::garantirMensalidadesTodosAlunosAtivos();
 
-        // Atualiza pendentes com data vencida para 'overdue' (somente se valor > 0)
+        $todayStr = Carbon::today()->toDateString();
+
+        // Atualiza pendentes com data vencida para 'overdue' (somente se valor > 0 e vencimento anterior a hoje)
         Mensalidade::where('status', 'pending')
             ->where('amount', '>', 0)
-            ->where('due_date', '<', Carbon::today())
+            ->where('due_date', '<', $todayStr)
             ->update(['status' => 'overdue']);
 
-        // Pegar apenas a mensalidade mais recente de cada aluno (status atual real)
-        $latestIds = DB::table('mensalidades')
+        // Garante que mensalidades futuras ou com vencimento hoje NÃO fiquem com status 'overdue'
+        Mensalidade::where('status', 'overdue')
+            ->where('due_date', '>=', $todayStr)
+            ->update(['status' => 'pending']);
+
+        // Trazer todas as pendentes e vencidas para que o admin possa dar baixa e visualizar,
+        // e para os alunos com mensalidades em dia, trazer a mensalidade mais recente paga.
+        $unpaidIds = Mensalidade::whereIn('status', ['pending', 'overdue'])->pluck('id');
+        $latestPaidIds = DB::table('mensalidades')
+            ->where('status', 'paid')
             ->select(DB::raw('MAX(id) as id'))
             ->groupBy('aluno_id')
             ->pluck('id');
 
+        $allRelevantIds = $unpaidIds->merge($latestPaidIds)->unique();
+
         $query = Mensalidade::with('aluno.responsavel')
-            ->whereIn('id', $latestIds);
+            ->whereIn('id', $allRelevantIds);
 
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->status);

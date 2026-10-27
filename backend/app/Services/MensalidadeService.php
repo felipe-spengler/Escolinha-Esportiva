@@ -49,7 +49,8 @@ class MensalidadeService
             $status = 'paid';
             $paidAt = Carbon::now();
         } else {
-            $status = $dueDateObj->isPast() ? 'overdue' : 'pending';
+            $todayStr = Carbon::today()->toDateString();
+            $status = $dueDateObj->toDateString() < $todayStr ? 'overdue' : 'pending';
             $paidAt = null;
         }
 

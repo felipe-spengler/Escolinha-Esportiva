@@ -28,11 +28,17 @@ class GerarMensalidades extends Command
             $criadas += \App\Services\MensalidadeService::garantirMensalidadesTodosAlunosAtivos($proximoMes);
         }
 
-        // Atualiza status de pendentes vencidas (valor > 0)
+        // Atualiza status de pendentes vencidas (valor > 0 e vencimento anterior a hoje)
+        $todayStr = Carbon::today()->toDateString();
         \App\Models\Mensalidade::where('status', 'pending')
             ->where('amount', '>', 0)
-            ->where('due_date', '<', Carbon::today())
+            ->where('due_date', '<', $todayStr)
             ->update(['status' => 'overdue']);
+
+        // Garante que mensalidades futuras ou com vencimento hoje NÃO fiquem com status 'overdue'
+        \App\Models\Mensalidade::where('status', 'overdue')
+            ->where('due_date', '>=', $todayStr)
+            ->update(['status' => 'pending']);
 
         $this->info("Finalizado! Total gerado: {$criadas}");
         return 0;

@@ -27,13 +27,21 @@ class PortalController extends Controller
             }
         }
 
-        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0)
+        $todayStr = Carbon::today()->toDateString();
+
+        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0 e vencimento anterior a hoje)
         $alunoIds = $filhos->pluck('id');
         Mensalidade::whereIn('aluno_id', $alunoIds)
             ->where('status', 'pending')
             ->where('amount', '>', 0)
-            ->where('due_date', '<', Carbon::today())
+            ->where('due_date', '<', $todayStr)
             ->update(['status' => 'overdue']);
+
+        // Garante que mensalidades futuras ou com vencimento hoje NÃO fiquem com status 'overdue'
+        Mensalidade::whereIn('aluno_id', $alunoIds)
+            ->where('status', 'overdue')
+            ->where('due_date', '>=', $todayStr)
+            ->update(['status' => 'pending']);
 
         $filhosCarregados = Aluno::where('responsavel_id', $parent->id)
             ->with([
@@ -64,12 +72,20 @@ class PortalController extends Controller
             MensalidadeService::garantirMensalidadeAluno($aluno);
         }
 
-        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0)
+        $todayStr = Carbon::today()->toDateString();
+
+        // Atualiza mensalidades pendentes vencidas para 'overdue' (somente se valor > 0 e vencimento anterior a hoje)
         Mensalidade::where('aluno_id', $aluno->id)
             ->where('status', 'pending')
             ->where('amount', '>', 0)
-            ->where('due_date', '<', Carbon::today())
+            ->where('due_date', '<', $todayStr)
             ->update(['status' => 'overdue']);
+
+        // Garante que mensalidades futuras ou com vencimento hoje NÃO fiquem com status 'overdue'
+        Mensalidade::where('aluno_id', $aluno->id)
+            ->where('status', 'overdue')
+            ->where('due_date', '>=', $todayStr)
+            ->update(['status' => 'pending']);
 
         // Calculate attendance rate
         $totalClasses = Frequencia::where('aluno_id', $aluno->id)->count();

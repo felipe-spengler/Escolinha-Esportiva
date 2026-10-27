@@ -16,6 +16,7 @@ function ParentPortal({ logout }) {
 
   // Overdue blocking modal states
   const [selectedOverdueId, setSelectedOverdueId] = useState(null);
+  const [dismissOverdueModal, setDismissOverdueModal] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(''); // 'key' | 'code' | 'modal_key' | 'modal_code'
   const [statusMessage, setStatusMessage] = useState(null);
@@ -78,38 +79,60 @@ function ParentPortal({ logout }) {
     navigate('/login');
   };
 
-  // Compute all overdue monthly fees across all children
-  const overdueMensalidades = useMemo(() => {
-    const list = [];
+  // Helper to safely parse YYYY-MM-DD into local Date object set to end of day
+  const parseDueDate = (dateVal) => {
+    if (!dateVal) return null;
+    const cleanStr = String(dateVal).split('T')[0].split(' ')[0];
+    const parts = cleanStr.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 23, 59, 59, 999);
+    }
+    return new Date(cleanStr + 'T23:59:59');
+  };
+
+  const isMensalidadeOverdue = (m) => {
+    if (!m || m.status === 'paid') return false;
+    const amount = parseFloat(m.amount) || 0;
+    if (amount <= 0) return false;
+
+    const dueDate = parseDueDate(m.due_date);
+    if (!dueDate || isNaN(dueDate.getTime())) return false;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // REGRA CRUCIAL: Se a data de vencimento for hoje ou no futuro, JAMAIS está em atraso!
+    if (dueDate >= today) return false;
+
+    // Apenas cobranças cuja data de vencimento já passou estritamente e não foram pagas
+    return m.status === 'overdue' || m.status === 'pending';
+  };
+
+  // Compute all strictly overdue monthly fees across all children
+  const overdueMensalidades = useMemo(() => {
+    const list = [];
+
+    const processItem = (m, alunoNome, alunoId) => {
+      if (isMensalidadeOverdue(m) && !list.some(item => item.id === m.id)) {
+        list.push({ ...m, alunoNome, alunoId });
+      }
+    };
+
     // 1. From all filhos in memory
     filhos.forEach(f => {
-      (f.mensalidades || []).forEach(m => {
-        const dueDate = new Date(m.due_date + 'T23:59:59');
-        const isOverdue = parseFloat(m.amount) > 0 && (m.status === 'overdue' || (m.status === 'pending' && dueDate < today));
-        if (isOverdue && !list.some(item => item.id === m.id)) {
-          list.push({ ...m, alunoNome: f.name, alunoId: f.id });
-        }
-      });
+      (f.mensalidades || []).forEach(m => processItem(m, f.name, f.id));
     });
 
     // 2. From detalhes if loaded
     if (detalhes?.mensalidades && detalhes?.aluno) {
-      detalhes.mensalidades.forEach(m => {
-        const dueDate = new Date(m.due_date + 'T23:59:59');
-        const isOverdue = parseFloat(m.amount) > 0 && (m.status === 'overdue' || (m.status === 'pending' && dueDate < today));
-        if (isOverdue && !list.some(item => item.id === m.id)) {
-          list.push({ ...m, alunoNome: detalhes.aluno.name, alunoId: detalhes.aluno.id });
-        }
-      });
+      detalhes.mensalidades.forEach(m => processItem(m, detalhes.aluno.name, detalhes.aluno.id));
     }
 
     return list;
   }, [filhos, detalhes]);
 
   const hasOverdue = overdueMensalidades.length > 0;
+  const isModalBlocked = hasOverdue && !dismissOverdueModal;
   const activeSettings = detalhes?.settings || settings;
 
   // Selected overdue fee for payment view
@@ -181,8 +204,7 @@ function ParentPortal({ logout }) {
             <select
               value={selectedFilhoId || ''}
               onChange={(e) => handleFilhoChange(e.target.value)}
-              disabled={hasOverdue}
-              className="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-1.5 focus:outline-none disabled:opacity-50"
+              className="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-1.5 focus:outline-none"
             >
               {filhos.map(f => (
                 <option key={f.id} value={f.id}>{f.name}</option>
@@ -198,8 +220,27 @@ function ParentPortal({ logout }) {
         </div>
       </header>
 
-      {/* Main Portal Body (Blurred & Disabled when there is an overdue bill) */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${hasOverdue ? 'filter blur-md pointer-events-none select-none opacity-40' : ''}`}>
+      {/* Banner de Aviso caso haja mensalidade vencida e o pai tenha continuado para o portal */}
+      {hasOverdue && (
+        <div className="bg-gradient-to-r from-red-500/20 via-amber-500/20 to-red-500/20 border-b border-red-500/30 px-6 py-3 flex items-center justify-between flex-wrap gap-3 text-red-200 text-xs shadow-lg animate-fade-in z-30 relative">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg animate-pulse">⚠️</span>
+            <span>
+              <strong>Atenção:</strong> Identificamos {overdueMensalidades.length === 1 ? '1 mensalidade em atraso' : `${overdueMensalidades.length} mensalidades em atraso`}. Regularize para manter o acesso e cadastro 100% em dia.
+            </span>
+          </div>
+          <button
+            onClick={() => setDismissOverdueModal(false)}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all shadow-md shadow-red-500/20 flex items-center gap-1.5 flex-shrink-0"
+          >
+            <span>💳</span>
+            <span>Ver Pagamento PIX</span>
+          </button>
+        </div>
+      )}
+
+      {/* Main Portal Body (Blurred & Disabled only when blocking modal is active) */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isModalBlocked ? 'filter blur-md pointer-events-none select-none opacity-40' : ''}`}>
         {filhos.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
             <span className="text-5xl mb-4">📭</span>
@@ -395,7 +436,7 @@ function ParentPortal({ logout }) {
                         {detalhes.mensalidades.map(m => (
                           <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-800/60 gap-4">
                             <div>
-                              <div className="text-white font-bold">Vencimento: {new Date(m.due_date).toLocaleDateString('pt-BR')}</div>
+                              <div className="text-white font-bold">Vencimento: {parseDueDate(m.due_date)?.toLocaleDateString('pt-BR') || new Date(m.due_date).toLocaleDateString('pt-BR')}</div>
                               <div className="text-slate-400 text-sm font-semibold mt-1">Valor: R$ {parseFloat(m.amount).toFixed(2)}</div>
                               {m.paid_at && (
                                 <div className="text-[10px] text-slate-500 mt-1">Pago em: {new Date(m.paid_at).toLocaleString('pt-BR')}</div>
@@ -403,14 +444,19 @@ function ParentPortal({ logout }) {
                             </div>
                             
                             <div className="flex items-center gap-3">
-                              <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${
-                                m.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                m.status === 'overdue' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              }`}>
-                                {m.status === 'paid' ? 'Pago' :
-                                 m.status === 'overdue' ? 'Vencida' : 'Pendente'}
-                              </span>
+                              {(() => {
+                                const isPaid = m.status === 'paid';
+                                const overdue = isMensalidadeOverdue(m);
+                                return (
+                                  <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${
+                                    isPaid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                    overdue ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                    'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                                  }`}>
+                                    {isPaid ? 'Pago' : overdue ? 'Vencida' : 'A Vencer'}
+                                  </span>
+                                );
+                              })()}
 
                               {m.status !== 'paid' && (
                                 <div className="flex gap-2">
@@ -465,9 +511,9 @@ function ParentPortal({ logout }) {
       </div>
 
       {/* ============================================================== */}
-      {/* MODAL DE BLOQUEIO POR MENSALIDADE ATRASADA (OBRIGATÓRIO)       */}
+      {/* MODAL DE BLOQUEIO POR MENSALIDADE ATRASADA                    */}
       {/* ============================================================== */}
-      {hasOverdue && activeOverdue && (() => {
+      {isModalBlocked && activeOverdue && (() => {
         const isManual = activeSettings?.payment_method === 'manual';
         const manualPayload = isManual && activeSettings?.pix_key
           ? generatePixPayload({
@@ -486,20 +532,29 @@ function ParentPortal({ logout }) {
             <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative my-8">
               
               {/* Alert Header */}
-              <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-800">
-                <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-2xl flex-shrink-0 animate-bounce">
-                  ⚠️
+              <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-2xl flex-shrink-0 animate-bounce">
+                    ⚠️
+                  </div>
+                  <div>
+                    <span className="bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1">
+                      Aviso Financeiro
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">Pendência em Aberto</h2>
+                  </div>
                 </div>
-                <div>
-                  <span className="bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1">
-                    Acesso Restrito
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-white">Pendência Financeira</h2>
-                </div>
+                <button
+                  onClick={() => setDismissOverdueModal(true)}
+                  className="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                  title="Fechar e ir para o Portal"
+                >
+                  ✕
+                </button>
               </div>
 
               <p className="text-slate-300 text-sm leading-relaxed mb-4">
-                Identificamos mensalidade(s) em atraso. De acordo com as normas da escolinha, o acesso ao boletim, faltas e avaliações do aluno é <strong className="text-red-400">liberado imediatamente após a regularização</strong> do pagamento abaixo:
+                Identificamos mensalidade(s) com vencimento expirado. De acordo com as normas da escolinha, mantenha os pagamentos regularizados via PIX abaixo:
               </p>
 
               {/* Multiple Overdue Selector (if more than 1) */}
@@ -517,7 +572,7 @@ function ParentPortal({ logout }) {
                             : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
                         }`}
                       >
-                        <span>Aluno: <strong className="text-slate-200">{m.alunoNome}</strong> (Venc: {new Date(m.due_date).toLocaleDateString('pt-BR')})</span>
+                        <span>Aluno: <strong className="text-slate-200">{m.alunoNome}</strong> (Venc: {parseDueDate(m.due_date)?.toLocaleDateString('pt-BR') || m.due_date})</span>
                         <span className="text-emerald-400 font-bold">R$ {parseFloat(m.amount).toFixed(2)}</span>
                       </button>
                     ))}
@@ -529,7 +584,7 @@ function ParentPortal({ logout }) {
               <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <div className="text-xs text-slate-400">Aluno: <strong className="text-white text-sm">{activeOverdue.alunoNome}</strong></div>
-                  <div className="text-xs text-slate-400 mt-1">Vencimento: <strong className="text-red-400">{new Date(activeOverdue.due_date).toLocaleDateString('pt-BR')}</strong></div>
+                  <div className="text-xs text-slate-400 mt-1">Vencimento: <strong className="text-red-400">{parseDueDate(activeOverdue.due_date)?.toLocaleDateString('pt-BR') || activeOverdue.due_date}</strong></div>
                 </div>
                 <div className="sm:text-right">
                   <div className="text-[10px] uppercase font-bold text-slate-500">Valor a Regularizar</div>
@@ -665,8 +720,17 @@ function ParentPortal({ logout }) {
                 )}
               </div>
 
+              {/* Continue to portal button */}
+              <button
+                onClick={() => setDismissOverdueModal(true)}
+                className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-slate-700"
+              >
+                <span>Continuar para o Portal (Visualizar Informações)</span>
+                <span>→</span>
+              </button>
+
               {/* Logout Option */}
-              <div className="mt-5 pt-4 border-t border-slate-800 text-center">
+              <div className="mt-4 pt-3 border-t border-slate-800 text-center">
                 <button
                   onClick={handleLogout}
                   className="text-slate-400 hover:text-slate-200 text-xs font-medium underline transition-all"
